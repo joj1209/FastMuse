@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en" data-bs-theme="auto">
+    <head>
+        <link rel="icon" href="{{ url_for('static', path='favicon.ico') }}">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" >
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta content="user-scalable=yes, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width" name="viewport">
+        <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+        <script>
+            async function loadMainContent(menuNumber) {
+                const main = document.getElementById('main-content');
+                main.innerHTML = '<div class="py-4">Loading...</div>';
+
+                const apiMap = {
+                    201: "/api/stock/top5",
+                    202: "/api/ev/top10",
+                    203: "/api/market/top10",
+                    204: "/api/blog/naver",
+                    205: "/api/youtube/comments",
+                    206: "/api/kakao/ai-image",
+                    207: "/api/kakao/talk",
+                    208: "/api/public/apt-trade",
+                    209: "/api/kma/forecast",
+                    210: "/api/jeju/flo-pop",
+                    211: "/api/seoul/for-pop",
+                    212: "/api/batch/stats"
+                };
+
+                if (!apiMap[menuNumber]) {
+                    main.innerHTML = "<h2>Select a menu</h2>";
+                    return;
+                }
+
+                try {
+                    const res = await fetch(apiMap[menuNumber]);
+                    const data = await res.json();  // {meta, items}
+                    const rows = data.items || [];
+
+                    let title = "";
+                    let thead = "";
+                    let tbody = "";
+
+                    switch(menuNumber) {
+                    case 211:
+                        title = "Seoul API : 자치구단위 서울 생활인구(장기체류 외국인)";
+                        thead = `<tr>
+                            <th>기준일자</th>
+                            <th>기준일ID</th>\
+                            <th>시간대구분</th>\
+                            <th>자치구코드</th>\
+                            <th>총생활인구수</th>\
+                            <th>중국인체류인구수</th>\
+                            <th>중국인 외국인체류인구수</th>\
+                            <th 입력일시</th>\
+                        </tr>`;
+                        tbody = rows.map(b => `<tr>
+                            <td>${b.strd_dt ?? ""}</td>
+                            <td>${b.stdr_de_id ?? ""}</td>
+                            <td>${b.tmzon_pd_se ?? ""}</td>
+                            <td>${b.adstrd_code_se ?? ""}</td>
+                            <td>${b.tot_lvpop_co ?? ""}</td>
+                            <td>${b.china_staypop_co ?? ""}</td>
+                            <td>${b.etc_staypop_co ?? ""}</td>
+                            <td>${b.ins_dt ?? ""}</td>
+                        </tr>`).join("");
+                        break;    
+                    case 210:
+                        title = "Jeju API : 지역별 시간단위 방문자수";
+                        thead = `<tr>
+                            <th>기준일자</th>
+                            <th>등록일자</th>\
+                            <th>시군구</th>\
+                            <th>읍면동</th>\
+                            <th>성별</th>\
+                            <th>연령대</th>\
+                            <th>거주인구</th>\
+                            <th>근무인구</th>\
+                            <th>방문자수</th>\
+                            <th 입력일시</th>\
+                        </tr>`;
+                        tbody = rows.map(b => `<tr>
+                            <td>${b.strd_dt ?? ""}</td>
+                            <td>${b.regist_dt ?? ""}</td>
+                            <td>${b.city ?? ""}</td>
+                            <td>${b.emd ?? ""}</td>
+                            <td>${b.gender ?? ""}</td>
+                            <td>${b.age_group ?? ""}</td>
+                            <td>${b.resd_pop ?? ""}</td>
+                            <td>${b.work_pop ?? ""}</td>
+                            <td>${b.visit_pop ?? ""}</td>
+                            <td>${b.ins_dt ?? ""}</td>
+                        </tr>`).join("");
+                        break;
+                    case 209:
+                        title = "기상청 : 동네별시간예보";
+                        thead = `<tr>
+                            <th>기준일자</th>
+                            <th>기준시간</th>
+                            <th>카테고리</th>
+                            <th>예보지점X좌표</th>
+                            <th>예보지점Y좌표</th>
+                            <th>강수량</th>
+                            <th>입력일시</th>
+                        </tr>`;
+                        tbody = rows.map(b => `<tr>
+                            <td>${b.strd_dt ?? ""}</td>
+                            <td>${b.strd_tm ?? ""}</td>
+                            <td>${b.category ?? ""}</td>
+                            <td>${b.nx ?? ""}</td>
+                            <td>${b.ny ?? ""}</td>
+                            <td>${b.obsr_value ?? ""}</td>
+                            <td>${b.ins_dt ?? ""}</td>
+                        </tr>`).join("");
+                        break;     
+                    case 208:
+                        title = "Public Data : Apartment Trade";
+                        thead = `<tr>
+                            <th>기준일자</th>
+                            <th>법정동</th>
+                            <th>도로명</th>
+                            <th>단지명</th>
+                            <th>전용면적</th>
+                            <th>계약년도</th>
+                            <th>거래금액</th>
+                            <th>층</th>
+                            <th>건축년도</th>
+                            <th>입력일시</th>
+                        </tr>`;
+                        tbody = rows.map(b => `<tr>
+                            <td>${b.strd_dt ?? ""}</td>
+                            <td>${b.sgg_cd ?? ""}</td>
+                            <td>${b.road_nm ?? ""}</td>
+                            <td>${b.apt_nm ?? ""}</td>
+                            <td>${b.excul_use_area ?? ""}</td>
+                            <td>${b.deal_year ?? ""}</td>
+                            <td>${b.deal_amount ?? ""}</td>
+                            <td>${b.floor ?? ""}</td>
+                            <td>${b.build_year ?? ""}</td>
+                            <td>${b.ins_dt ?? ""}</td>
+                        </tr>`).join("");
+                        break; 
+                    case 207:
+                        title = "Kakao API Talk";
+                        thead = `<tr>
+                            <th>기준일자</th>
+                            <th>접근토큰</th>
+                            <th>토큰타입</th>
+                            <th>갱신토큰</th>
+                            <th>접근범위</th>
+                            <th>변경일시</th>
+                            <th>입력일시</th>
+                        </tr>`;
+                        tbody = rows.map(b => `<tr>
+                            <td>${b.strd_dt ?? ""}</td>
+                            <td>${b.access_token ?? ""}</td>
+                            <td>${b.token_type ?? ""}</td>
+                            <td>${b.refresh_token ?? ""}</td>
+                            <td>${b.comment_author ?? ""}</td>
+                            <td>${b.scope ?? ""}</td>
+                            <td>${b.upd_dt ?? ""}</td>
+                            <td>${b.ins_dt ?? ""}</td>
+                        </tr>`).join("");
+                        break;    
+                    case 206:
+                        title = "Kakao AI Image";
+                        thead = `<tr>
+                            <th>기준일자</th>
+                            <th>제시어</th>
+                        </tr>`;
+                        tbody = rows.map(b => `<tr>
+                            <td>${b.strd_dt ?? ""}</td>
+                            <td>${b.suggest_word ?? ""}</td>
+                        </tr>`).join("");
+                        break;
+                    case 205:
+                        title = "Youtube 키워드 검색 : UHD모니터";
+                        thead = `<tr>
+                            <th>기준일자</th>
+                            <th>검색어</th>
+                            <th>링크</th>
+                            <th>비디오ID</th>
+                            <th>댓글게시자</th>
+                            <th>입력일시</th>
+                        </tr>`;
+                        tbody = rows.map(b => `<tr>
+                            <td>${b.strd_dt ?? ""}</td>
+                            <td>${b.keword ?? ""}</td>
+                            <td>${b.link ?? ""}</td>
+                            <td>${b.video_id ?? ""}</td>
+                            <td>${b.comment_author ?? ""}</td>
+                            <td>${b.ins_dt ?? ""}</td>
+                        </tr>`).join("");
+                        break;
+                    case 204:
+                        title = "FinanceDataReader 네이버 블로그 키워드 검색 : 시흥대야역 맛집";
+                        thead = `<tr>
+                            <th>기준일자</th>
+                            <th>검색어</th>
+                            <th>제목</th>
+                            <th>링크</th>
+                            <th>입력일시</th>
+                        </tr>`;
+                        tbody = rows.map(b => `<tr>
+                            <td>${b.strd_dt ?? ""}</td>
+                            <td>${b.keword ?? ""}</td>
+                            <td>${b.title ?? ""}</td>
+                            <td>${b.link ?? ""}</td>
+                            <td>${b.ins_dt ?? ""}</td>
+                        </tr>`).join("");
+                        break;
+                    case 203:
+                        title = "FinanceDataReader 글로벌마켓 Top 10";
+                        thead = `<tr>
+                            <th>기준일자</th>
+                            <th>마켓</th>
+                            <th>주식일자</th>
+                            <th>시가</th>
+                            <th>고가</th>
+                            <th>저가</th>
+                            <th>종가</th>
+                            <th>거래량</th>
+                        </tr>`;
+                        tbody = rows.map(b => `<tr>
+                            <td>${b.strd_dt ?? ""}</td>
+                            <td>${b.market ?? ""}</td>
+                            <td>${b.stock_day ?? ""}</td>
+                            <td>${b.opening_price ?? ""}</td>
+                            <td>${b.high_price ?? ""}</td>
+                            <td>${b.low_price ?? ""}</td>
+                            <td>${b.closing_price ?? ""}</td>
+                            <td>${b.volume ?? ""}</td>
+                        </tr>`).join("");
+                        break;
+                    case 202:
+                        title = "전기차 출고대수 Top 10";
+                        thead = `<tr>
+                            <th>기준일자</th>
+                            <th>시도명</th>
+                            <th>지역명</th>
+                            <th>접수방법</th>
+                            <th>접수순위</th>
+                            <th>보급대수</th>
+                            <th>입력일시</th>
+                        </tr>`;
+                        tbody = rows.map(b => `<tr>
+                            <td>${b.strd_dt ?? ""}</td>
+                            <td>${b.sido_nm ?? ""}</td>
+                            <td>${b.region ?? ""}</td>
+                            <td>${b.receipt_way ?? ""}</td>
+                            <td>${b.receipt_priority ?? ""}</td>
+                            <td>${b.value ?? ""}</td>
+                            <td>${b.ins_dt ?? ""}</td>
+                        </tr>`).join("");
+                        break;
+                    case 201:
+                        title = "Stock Top 5";
+                        thead = `<tr>
+                        <th>기준일자</th><th>종목코드</th><th>종목명</th>
+                        <th>전일가</th><th>현재가</th><th>거래량</th><th>입력일시</th>
+                        </tr>`;
+                        tbody = rows.map(b => `<tr>
+                        <td>${b.strd_dt ?? ""}</td>
+                        <td>${b.stock_cd ?? ""}</td>
+                        <td>${b.stock_nm ?? ""}</td>
+                        <td>${b.pre_price ?? ""}</td>
+                        <td>${b.today_price ?? ""}</td>
+                        <td>${b.trading_volume ?? ""}</td>
+                        <td>${b.ins_dt ?? ""}</td>
+                        </tr>`).join("");
+                        break;
+
+                    // TODO: 202~212 동일 패턴으로 컬럼 정의
+                    }
+
+                    main.innerHTML = `
+                    <h2>${title}</h2>
+                    <div class="table-responsive small">
+                        <table class="table table-striped table-sm">
+                        <thead>${thead}</thead>
+                        <tbody>${tbody}</tbody>
+                        </table>
+                    </div>
+                    `;
+                } catch (e) {
+                    main.innerHTML = `<div class="text-danger">Loading failed: ${e}</div>`;
+                }
+            }
+        </script>
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="">
+        <title>W.S.C.</title>
+
+        <link
+            rel="canonical"
+            href="https://getbootstrap.com/docs/5.3/examples/headers/">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@3">
+        <link rel="stylesheet" href="{{ url_for('static', path='bootstrap.min.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', path='assets/dist/css/bootstrap.min.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', path='assets/dist/css/dashboard.css') }}">
+
+
+        <!-- Custom styles for this template -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.min.css"
+            rel="stylesheet">
+
+        <style >
+            .b-example-divider {
+                width: 100%;
+                height: 1rem;
+                background-color: rgba(0, 0, 0, .1);
+                border: solid rgba(0, 0, 0, .15);
+                border-width: 1px 0;
+                box-shadow: inset 0 0.5em 1.5em rgba(0, 0, 0, .1), inset 0 0.125em 0.5em rgba(0, 0, 0, .15);
+            }
+        </style>
+
+        
+
+    </head>
+    <body>
+
+        <h1 class="visually-hidden">Headers examples</h1>
+        <div class="container my-3">
+            <button class="btn btn-primary" onclick="runFinanceDataReader()">FinanceDataReader 실행</button>
+        </div>
+        <script>
+        async function runFinanceDataReader() {
+            const res = await fetch('/api/run/finance-data-reader', {method: 'POST'});
+            const data = await res.json();
+            alert('실행 완료! 데이터 row 수: ' + (data.rows ? data.rows.length : 0));
+        }
+        </script>
+
+        <!-- header start -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
+            <symbol id="bootstrap" viewbox="0 0 118 94">
+                <title>Bootstrap</title>
+                <path
+                    fill-rule="evenodd"
+                    clip-rule="evenodd"
+                    d="M24.509 0c-6.733 0-11.715 5.893-11.492 12.284.214 6.14-.064 14.092-2.066 20.577C8.943 39.365 5.547 43.485 0 44.014v5.972c5.547.529 8.943 4.649 10.951 11.153 2.002 6.485 2.28 14.437 2.066 20.577C12.794 88.106 17.776 94 24.51 94H93.5c6.733 0 11.714-5.893 11.491-12.284-.214-6.14.064-14.092 2.066-20.577 2.009-6.504 5.396-10.624 10.943-11.153v-5.972c-5.547-.529-8.934-4.649-10.943-11.153-2.002-6.484-2.28-14.437-2.066-20.577C105.214 5.894 100.233 0 93.5 0H24.508zM80 57.863C80 66.663 73.436 72 62.543 72H44a2 2 0 01-2-2V24a2 2 0 012-2h18.437c9.083 0 15.044 4.92 15.044 12.474 0 5.302-4.01 10.049-9.119 10.88v.277C75.317 46.394 80 51.21 80 57.863zM60.521 28.34H49.948v14.934h8.905c6.884 0 10.68-2.772 10.68-7.727 0-4.643-3.264-7.207-9.012-7.207zM49.948 49.2v16.458H60.91c7.167 0 10.964-2.876 10.964-8.281 0-5.406-3.903-8.178-11.425-8.178H49.948z"></path>
+            </symbol>
+        </svg>
+
+    <header class="container-fluid d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom sticky-top bg-white" style="z-index: 1030;">
+                <a
+                    href="/"
+                    class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-body-emphasis text-decoration-none">
+                    <svg class="bi me-2" width="40" height="32"><use xlink:href="#bootstrap"/></svg>
+                    <span class="fs-4">Web Scraping & Crawling</span>
+                </a>
+
+                <ul class="nav nav-pills">
+                    <li class="nav-item">
+                        <a href="/" class="nav-link active" aria-current="page">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">FAQs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">Login</a>
+                    </li>
+                </ul>
+            </header>
+        </div>
+        <!-- header end -->
+
+        <!-- main(section) start -->
+        <div class="container-fluid">
+            <div class="row align-items-start">
+                    <nav class="sidebar border-end col-md-3 col-lg-2 p-0 bg-body-tertiary min-vh-100">
+                    <h6
+                        class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase">
+                        <span>Open API</span>
+                        <a class="link-secondary" href="#" aria-label="Add a new report">
+                            <svg class="bi"><use xlink:href="#plus-circle"/></svg>
+                        </a>
+                    </h6>
+                    <ul class="nav nav-pills flex-column mb-auto gap-2">
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(201)">
+                                <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
+                                Naver Finance
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(202)">
+                                <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
+                                EV Portal
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(203)">
+                                <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
+                                Finance Data Reader
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(204)">
+                                <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
+                                Naver API
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(205)">
+                                <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
+                                Google API
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(206)">
+                                <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
+                                Kakao API
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(207)">
+                                <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
+                                Kakao API(KaTalk)
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(208)">
+                                <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
+                                Public API
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(209)">
+                                <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
+                                kma API
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(210)">
+                                <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
+                                Juju API
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(211)">
+                                <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
+                                Seoul API
+                            </a>
+                        </li>
+                    </ul>
+
+                    <hr class="my-3">
+
+                    <h6
+                        class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase">
+                        <span>Schedule</span>
+                        <a class="link-secondary" href="#" aria-label="Add a new report">                        
+                            <svg class="bi"><use xlink:href="#plus-circle"/></svg>
+                        </a>
+                    </h6>
+                    <ul class="nav nav-pills flex-column mb-auto">
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2" href="#">
+                                <svg class="bi"><use xlink:href="#gear-wide-connected"/></svg>
+                                Airflow
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            {# <a class="nav-link d-flex align-items-center gap-2" href="#"> #}
+                            <a class="nav-link d-flex align-items-center gap-2" href="#" onclick="loadMainContent(212)">    
+                                <svg class="bi"><use xlink:href="#door-closed"/></svg>
+                                ApachBatch
+                            </a>
+                        </li>
+                    </ul>
+
+                    <hr class="my-3">
+                    <h6
+                        class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase">
+                        <span>Reports</span>
+                        <a class="link-secondary" href="#" aria-label="Add a new report">
+                            <svg class="bi"><use xlink:href="#plus-circle"/></svg>
+                        </a>
+                    </h6>
+                    <ul class="nav nav-pills flex-column mb-auto">
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2" href="#">
+                                <svg class="bi"><use xlink:href="#gear-wide-connected"/></svg>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-2" href="#">
+                                <svg class="bi"><use xlink:href="#door-closed"/></svg>
+                                Excel
+                            </a>
+                        </li>
+                    </ul>
+
+                </nav>
+                <!-- main/grid start -->
+                    <main id="main-content" class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                    <h2>Main image preparing</h2>
+                    <div class="table-responsive small">
+                        <img src="{{ url_for('static', path='image/stacks-of-coins-arranged-in-a-bar-graph.jpg') }}" width="900px" height="700px">
+                        <table class="table table-striped table-sm">
+                    {# include 'dbms/list_naver.html' #}
+                        </table>
+                    </div>
+                </main>
+                <!-- main/grid end -->
+            </div>
+        </div>
+        <!-- main(section) start -->
+
+        <!-- footer start -->
+        <div class="b-example-divider"></div>
+
+        <footer class="container-fluid py-3 my-4">
+                <ul class="nav justify-content-center border-bottom pb-3 mb-3">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link px-2 text-body-secondary">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link px-2 text-body-secondary">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link px-2 text-body-secondary">Pricing</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link px-2 text-body-secondary">FAQs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link px-2 text-body-secondary">About</a>
+                    </li>
+                </ul>
+                <p class="text-center text-body-secondary">&copy; 2024 Company, Inc</p>
+            </footer>
+        </div>
+        <!-- footer end -->
+
+    </body>
+</html>
