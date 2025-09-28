@@ -41,12 +41,22 @@ class FinanceDataReaderParser():
         # import inside the function so import-time failures don't crash the app
         import FinanceDataReader as fdr
 
-        pre_dt = (date.today()-timedelta(days=1)).strftime('%Y%m%d')
+        # 영업일 찾기 함수
+        def get_business_date(target_date, days_back=0):
+            current_date = target_date - timedelta(days=days_back)
+            # 주말인 경우 금요일로 조정
+            while current_date.weekday() >= 5:  # 5=토요일, 6=일요일
+                current_date -= timedelta(days=1)
+            return current_date.strftime('%Y%m%d')
+
+        today = date.today()
         strd_dt = time.strftime('%Y%m%d')
         ins_dt = time.strftime('%Y%m%d%H%M%S')
-        week_nm = date.today().weekday()
-        if week_nm == 1:
-            us_pre_dt = (date.today()-timedelta(days=3)).strftime('%Y%m%d')
+        
+        # 한국 시장용 영업일 (오늘이 주말이면 금요일)
+        kr_business_date = get_business_date(today)
+        # 미국 시장용 영업일 (어제가 주말이면 그 전 금요일)
+        us_business_date = get_business_date(today, 1)
 
         # Helper to normalize a dataframe into a standard schema
         def normalize(df_src, market_name):
@@ -67,11 +77,39 @@ class FinanceDataReaderParser():
             standardized.insert(0, 'strd_dt', strd_dt)
             return standardized
 
-        df_kospi = normalize(fdr.DataReader('KS11', strd_dt, strd_dt), 'KOSPI')
-        df_kosdaq = normalize(fdr.DataReader('KQ11', strd_dt, strd_dt), 'KOSDAQ')
-        df_nasdaq = normalize(fdr.DataReader('IXIC', pre_dt), 'NASDAQ')
-        df_sp500 = normalize(fdr.DataReader('S&P500', pre_dt), 'S&P500')
-        df_dji = normalize(fdr.DataReader('DJI', pre_dt), 'DowJones')
+        # 각 데이터 소스를 개별적으로 처리하여 오류 시 이전 영업일 시도
+        def safe_data_reader(symbol, start_date, end_date=None, market_name='', max_retry=5):
+            for i in range(max_retry):
+                try:
+                    current_date = datetime.datetime.strptime(start_date, '%Y%m%d').date()
+                    # i일 전 영업일로 조정
+                    retry_date = get_business_date(current_date, i)
+                    
+                    if end_date is None:
+                        df = fdr.DataReader(symbol, retry_date)
+                    else:
+                        retry_end_date = retry_date  # 한국 시장은 시작일=종료일
+                        df = fdr.DataReader(symbol, retry_date, retry_end_date)
+                    
+                    if not df.empty:
+                        print(f"[성공] {market_name}({symbol}) 데이터 조회 성공 - 날짜: {retry_date}")
+                        return normalize(df, market_name)
+                except Exception as e:
+                    print(f"[재시도 {i+1}/{max_retry}] {market_name}({symbol}) 데이터 조회 실패 ({retry_date}): {e}")
+                    continue
+            
+            # 모든 재시도 실패 시 빈 DataFrame 반환
+            print(f"[실패] {market_name}({symbol}) 모든 재시도 실패")
+            empty_df = pd.DataFrame(columns=['strd_dt', 'market', 'stock_day', 'Open', 'High', 'Low', 'Close', 'Volume'])
+            empty_df['strd_dt'] = strd_dt
+            empty_df['market'] = market_name
+            return empty_df
+
+        df_kospi = safe_data_reader('KS11', kr_business_date, kr_business_date, 'KOSPI')
+        df_kosdaq = safe_data_reader('KQ11', kr_business_date, kr_business_date, 'KOSDAQ')
+        df_nasdaq = safe_data_reader('IXIC', us_business_date, None, 'NASDAQ')
+        df_sp500 = safe_data_reader('S&P500', us_business_date, None, 'S&P500')
+        df_dji = safe_data_reader('DJI', us_business_date, None, 'DowJones')
 
         dfs = [df_kospi, df_kosdaq, df_nasdaq, df_sp500, df_dji]
         dfs = [df for df in dfs if not df.empty and not df.isna().all().all()]
