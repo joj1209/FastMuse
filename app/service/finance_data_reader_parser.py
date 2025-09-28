@@ -1,3 +1,5 @@
+from app.db import SessionLocal
+from app.models import MarketTop
 import pandas as pd
 import time
 import datetime
@@ -5,16 +7,35 @@ from datetime import date, timedelta
 
 
 class FinanceDataReaderParser():
-    """Lazy FinanceDataReader wrapper.
-
-    The original implementation performed imports and network calls at module
-    import time which caused server startup failures when the FinanceDataReader
-    package was not yet available. This version defers importing the
-    FinanceDataReader module and the data retrieval until get_data() is called.
-    """
-    def __init__(self):
-        # keep __init__ lightweight; actual work happens in get_data()
-        self.df = None
+    def save_to_dbms_market_stock(self, df):
+        print("[DB 적재] 함수 진입: save_to_dbms_market_stock 호출됨")
+        session = SessionLocal()
+        try:
+            # DataFrame에서 strd_dt 값 추출 (모든 row가 동일한 strd_dt라고 가정)
+            if not df.empty:
+                strd_dt_value = df.iloc[0]['strd_dt']
+                print(f"[DB 적재] 삭제 대상 strd_dt: {strd_dt_value}")
+                # 기존 데이터 삭제
+                session.query(MarketTop).filter(MarketTop.strd_dt == strd_dt_value).delete()
+                session.commit()
+            # 새 데이터 적재
+            for _, row in df.iterrows():
+                print(f"[DB 적재] 저장 row: {row.to_dict()}")
+                obj = MarketTop(
+                    strd_dt=row['strd_dt'],
+                    market=row['market'],
+                    stock_day=row['stock_day'],
+                    opening_price=row['opening_price'],
+                    high_price=row['high_price'],
+                    low_price=row['low_price'],
+                    closing_price=row['closing_price'],
+                    volume=row['volume'],
+                    ins_dt=row['ins_dt']
+                )
+                session.add(obj)
+            session.commit()
+        finally:
+            session.close()
 
     def get_data(self):
         # import inside the function so import-time failures don't crash the app
@@ -41,28 +62,17 @@ class FinanceDataReaderParser():
         def normalize(df_src, market_name):
             df_local = df_src.copy()
             df_local = df_local.reset_index()
-
-            # Determine which column is the date/index column
-            # Common names: 'Date' or the first column after reset_index
             if 'Date' in df_local.columns:
                 date_col = 'Date'
             else:
-                # assume the first column is the date/index column
                 date_col = df_local.columns[0]
-
-            # Standard columns we want to preserve
-            want = ['stock_day', 'Open', 'High', 'Low', 'Close', 'Volume']
-
             standardized = pd.DataFrame()
             standardized['stock_day'] = df_local[date_col]
-            # For each expected column, use it if present, otherwise fill with NaN
             for col in ['Open', 'High', 'Low', 'Close', 'Volume']:
                 if col in df_local.columns:
                     standardized[col] = df_local[col]
                 else:
                     standardized[col] = pd.NA
-
-            # attach metadata columns
             standardized.insert(0, 'market', market_name)
             standardized.insert(0, 'strd_dt', strd_dt)
             return standardized
@@ -73,11 +83,12 @@ class FinanceDataReaderParser():
         df_sp500 = normalize(fdr.DataReader('S&P500', pre_dt), 'S&P500')
         df_dji = normalize(fdr.DataReader('DJI', pre_dt), 'DowJones')
 
-        df_total = pd.concat([df_kospi, df_kosdaq, df_nasdaq, df_sp500, df_dji], ignore_index=True)
-        # replace pandas NaT with a timestamp string for consistency
+        dfs = [df_kospi, df_kosdaq, df_nasdaq, df_sp500, df_dji]
+        dfs = [df for df in dfs if not df.empty and not df.isna().all().all()]
+        df_total = pd.concat(dfs, ignore_index=True)
         df_total.replace({pd.NaT: datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}, inplace=True)
+        df_total = df_total.infer_objects(copy=False)
 
-        # Now map to your expected output column names
         rename_map = {
             'Open': 'opening_price',
             'High': 'high_price',
@@ -85,18 +96,13 @@ class FinanceDataReaderParser():
             'Close': 'closing_price',
             'Volume': 'volume'
         }
-
         df_total = df_total.rename(columns=rename_map)
-
-        # Ensure all target columns exist
         expected_cols = ['strd_dt', 'market', 'stock_day', 'opening_price', 'high_price', 'low_price', 'closing_price', 'volume']
         for c in expected_cols:
             if c not in df_total.columns:
                 df_total[c] = pd.NA
-
-        # Reorder columns
         df = df_total[expected_cols].copy()
         df['ins_dt'] = ins_dt
-
         self.df = df
         return self.df
+        # ...existing code...

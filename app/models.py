@@ -30,7 +30,7 @@ class EvTop(Base):
 class MarketTop(Base):
     __tablename__ = "dbms_market_stock"
     id = Column(Integer, primary_key=True)
-    strd_dt = Column(String(10), index=True)
+    strd_dt = Column(String(8), index=True)
     market = Column(String(50))
     stock_day = Column(String(10))
     opening_price = Column(Float)
@@ -38,6 +38,7 @@ class MarketTop(Base):
     low_price = Column(Float)
     closing_price = Column(Float)
     volume = Column(BigInteger)
+    ins_dt = Column(String(20), nullable=False)
 
 # 204: Naver Blog crawl
 class BlogCrawl(Base):

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, Query
+
+from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 from ..db import get_db
@@ -6,26 +8,18 @@ from ..models import (
     NaverFinance, EvTop, MarketTop, BlogCrawl, YoutubeComment, KakaoAIImage, KakaoTalk,
     PublicAptTrade, KmaForecast, JejuFloPop, SeoulForPop, ApiBatchStat
 )
+from app.service.finance_data_reader_parser import FinanceDataReaderParser
 
 router = APIRouter(prefix="/api", tags=["api"])
 
-# FinanceDataReader 실행 엔드포인트 (import deferred into the handler)
 @router.post("/run/finance-data-reader")
-def run_finance_data_reader():
-    # Import inside the handler so server startup won't fail if the package
-    # isn't present during import-time (we handle errors in the parser itself).
-    from ..service.finance_data_reader_parser import FinanceDataReaderParser
-    from fastapi import HTTPException
-    try:
-        parser = FinanceDataReaderParser()
-        df = parser.get_data()
-        return {"rows": df.to_dict("records")}
-    except ImportError as ie:
-        # Known import issue: return a clear JSON error
-        raise HTTPException(status_code=502, detail=str(ie))
-    except Exception as e:
-        # Generic runtime error during parsing: include cause in response
-        raise HTTPException(status_code=500, detail=f"FinanceDataReader failed: {e}")
+async def run_finance_data_reader(request: Request):
+    parser = FinanceDataReaderParser()
+    df = parser.get_data()
+    df['stock_day'] = df['stock_day'].astype(str)  # Timestamp -> str 변환
+    parser.save_to_dbms_market_stock(df)
+    # 결과 row 수 반환
+    return JSONResponse({"rows": df.to_dict(orient="records")})
 
 # DB 연결 테스트 엔드포인트
 @router.get("/db/test")
