@@ -39,17 +39,7 @@ class FinanceDataReaderParser():
 
     def get_data(self):
         # import inside the function so import-time failures don't crash the app
-        try:
-            import FinanceDataReader as fdr
-        except Exception:
-            # fall back to lowercase package name if available
-            try:
-                import finance_datareader as fdr
-            except Exception:
-                raise ImportError(
-                    "FinanceDataReader package is not installed in the running Python environment. "
-                    "Install it with: pip install finance-datareader"
-                )
+        import FinanceDataReader as fdr
 
         pre_dt = (date.today()-timedelta(days=1)).strftime('%Y%m%d')
         strd_dt = time.strftime('%Y%m%d')
