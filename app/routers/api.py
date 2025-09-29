@@ -14,6 +14,7 @@ from app.service.ev_car_portal_crawler import EvCarPortalCrawler
 from app.service.naver_blog_crawler import NaverBlogCrawler
 from app.service.youtube_comment_crawler import YoutubeCommentCrawler
 from app.service.kakao_talk_crawler import KakaoTalkCrawler
+from app.service.airflow_runner import AirflowRunner
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -120,6 +121,26 @@ async def run_kakao_talk_crawler(request: Request):
         return JSONResponse(
             status_code=500,
             content={"error": "카카오톡 API 실행 중 오류 발생", "details": str(e)}
+        )
+
+@router.post("/run/airflow-bash-operator")
+async def run_airflow_bash_operator(request: Request):
+    """Airflow dags_bash_operator DAG 실행"""
+    try:
+        import time
+        runner = AirflowRunner()
+        result = runner.run_bash_operator_dag()
+        
+        return JSONResponse({
+            "message": "Airflow DAG 실행 완료",
+            "result": result,
+            "timestamp": time.strftime('%Y%m%d%H%M%S')
+        })
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Airflow DAG 실행 중 오류 발생", "details": str(e)}
         )
 
 # DB 연결 테스트 엔드포인트

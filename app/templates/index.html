@@ -396,6 +396,21 @@
                 alert('카카오톡 API 실행 중 오류가 발생했습니다.');
             }
         }
+        
+        async function runAirflowBashOperator() {
+            try {
+                const res = await fetch('/api/run/airflow-bash-operator', {method: 'POST'});
+                const data = await res.json();
+                if (data.error) {
+                    alert('오류: ' + data.error);
+                } else {
+                    alert('Airflow DAG 실행이 완료되었습니다!\n' + JSON.stringify(data, null, 2));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Airflow DAG 실행 중 오류가 발생했습니다.');
+            }
+        }
         </script>
 
         <!-- header start -->
@@ -529,7 +544,7 @@
                     </h6>
                     <ul class="nav nav-pills flex-column mb-auto">
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2" href="#">
+                            <a class="nav-link d-flex align-items-center gap-2" href="#" onclick="runAirflowBashOperator()">
                                 <svg class="bi"><use xlink:href="#gear-wide-connected"/></svg>
                                 Airflow
                             </a>
