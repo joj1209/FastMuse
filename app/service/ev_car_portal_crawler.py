@@ -243,7 +243,7 @@ class EvCarPortalCrawler:
 
             # 기준일자, 입력일시
             strd_dt = time.strftime('%Y%m%d')
-            ins_dt = datetime.now()
+            ins_dt = time.strftime('%Y%m%d%H%M%S')  # 14자리 문자열로 변경
 
             # 데이터 구조화
             categories = ["민간공고대수", "접수대수", "출고대수", "출고잔여대수"]

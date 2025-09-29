@@ -22,18 +22,11 @@ async def run_naver_finance_crawler(request: Request):
         crawler = NaverFinanceCrawler()
         data_list = crawler.run()
         
-        # datetime 객체를 문자열로 변환하여 JSON 직렬화 문제 해결
-        serializable_data = []
-        for data in data_list:
-            serializable_item = data.copy()
-            if 'ins_dt' in serializable_item and hasattr(serializable_item['ins_dt'], 'isoformat'):
-                serializable_item['ins_dt'] = serializable_item['ins_dt'].isoformat()
-            serializable_data.append(serializable_item)
-        
+        # ins_dt가 이제 문자열이므로 직렬화 처리 불필요
         return JSONResponse({
             "message": "네이버 금융 크롤링 완료", 
             "count": len(data_list), 
-            "data": serializable_data
+            "data": data_list
         })
     except Exception as e:
         return JSONResponse(
@@ -48,18 +41,11 @@ async def run_ev_car_portal_crawler(request: Request):
         crawler = EvCarPortalCrawler()
         data_list = crawler.run()
         
-        # datetime 객체를 문자열로 변환하여 JSON 직렬화 문제 해결
-        serializable_data = []
-        for data in data_list:
-            serializable_item = data.copy()
-            if 'ins_dt' in serializable_item and hasattr(serializable_item['ins_dt'], 'isoformat'):
-                serializable_item['ins_dt'] = serializable_item['ins_dt'].isoformat()
-            serializable_data.append(serializable_item)
-        
+        # ins_dt가 이제 문자열이므로 직렬화 처리 불필요
         return JSONResponse({
             "message": "EV 포털 크롤링 완료", 
             "count": len(data_list), 
-            "data": serializable_data
+            "data": data_list
         })
     except Exception as e:
         return JSONResponse(
@@ -83,18 +69,11 @@ async def run_naver_blog_crawler(request: Request):
         crawler = NaverBlogCrawler()
         data_list = crawler.run()
         
-        # datetime 객체를 문자열로 변환하여 JSON 직렬화 문제 해결
-        serializable_data = []
-        for data in data_list:
-            serializable_item = data.copy()
-            if 'ins_dt' in serializable_item and hasattr(serializable_item['ins_dt'], 'isoformat'):
-                serializable_item['ins_dt'] = serializable_item['ins_dt'].isoformat()
-            serializable_data.append(serializable_item)
-        
+        # ins_dt가 이제 문자열이므로 직렬화 처리 불필요
         return JSONResponse({
             "message": "네이버 블로그 검색 완료", 
             "count": len(data_list), 
-            "data": serializable_data
+            "data": data_list
         })
     except Exception as e:
         return JSONResponse(
@@ -134,7 +113,7 @@ def stock_top5(p: dict = Depends(paging), db: Session = Depends(get_db)):
             "pre_price": r.pre_price,
             "today_price": r.today_price,
             "trading_volume": r.trading_volume,
-            "ins_dt": r.ins_dt.isoformat() if hasattr(r.ins_dt, "isoformat") and r.ins_dt else r.ins_dt,
+            "ins_dt": r.ins_dt,
         }
         for r in rows
     ]
@@ -152,7 +131,7 @@ def stock_all(db: Session = Depends(get_db)):
             "pre_price": r.pre_price,
             "today_price": r.today_price,
             "trading_volume": r.trading_volume,
-            "ins_dt": r.ins_dt.isoformat() if hasattr(r.ins_dt, "isoformat") and r.ins_dt else r.ins_dt,
+            "ins_dt": r.ins_dt,
         }
         for r in rows
     ]
@@ -166,7 +145,7 @@ def ev_top10(p: dict = Depends(paging), db: Session = Depends(get_db)):
     rows = q.limit(p["limit"]).offset(p["offset"]).all()
     items = [dict(
         strd_dt=r.strd_dt, sido_nm=r.sido_nm, region=r.region, receipt_way=r.receipt_way,
-        receipt_priority=r.receipt_priority, value=r.value, ins_dt=r.ins_dt.isoformat() if getattr(r, "ins_dt", None) and hasattr(r.ins_dt, "isoformat") else r.ins_dt
+        receipt_priority=r.receipt_priority, value=r.value, ins_dt=r.ins_dt
     ) for r in rows]
     return {"meta": {"total": total, "limit": p["limit"], "offset": p["offset"]}, "items": items}
 
@@ -176,7 +155,7 @@ def ev_all(db: Session = Depends(get_db)):
     rows = db.query(EvTop).order_by(EvTop.ins_dt.desc(), EvTop.id.desc()).all()
     items = [dict(
         strd_dt=r.strd_dt, sido_nm=r.sido_nm, region=r.region, receipt_way=r.receipt_way,
-        receipt_priority=r.receipt_priority, value=r.value, ins_dt=r.ins_dt.isoformat() if getattr(r, "ins_dt", None) and hasattr(r.ins_dt, "isoformat") else r.ins_dt
+        receipt_priority=r.receipt_priority, value=r.value, ins_dt=r.ins_dt
     ) for r in rows]
     return {"items": items}
 
@@ -210,7 +189,7 @@ def blog_naver(p: dict = Depends(paging), db: Session = Depends(get_db)):
     rows = q.limit(p["limit"]).offset(p["offset"]).all()
     items = [dict(
         strd_dt=r.strd_dt, keword=r.keword, title=r.title, link=r.link,
-        ins_dt=r.ins_dt.isoformat() if getattr(r, "ins_dt", None) and hasattr(r.ins_dt, "isoformat") else r.ins_dt
+        ins_dt=r.ins_dt
     ) for r in rows]
     return {"meta": {"total": total, "limit": p["limit"], "offset": p["offset"]}, "items": items}
 
@@ -220,7 +199,7 @@ def blog_all(db: Session = Depends(get_db)):
     rows = db.query(BlogCrawl).order_by(BlogCrawl.ins_dt.desc(), BlogCrawl.id.desc()).all()
     items = [dict(
         strd_dt=r.strd_dt, keword=r.keword, title=r.title, link=r.link,
-        ins_dt=r.ins_dt.isoformat() if getattr(r, "ins_dt", None) and hasattr(r.ins_dt, "isoformat") else r.ins_dt
+        ins_dt=r.ins_dt
     ) for r in rows]
     return {"items": items}
 

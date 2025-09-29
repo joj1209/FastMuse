@@ -58,7 +58,7 @@ class NaverFinanceCrawler:
 
             # 기준일자, 입력일시
             strd_dt = time.strftime('%Y%m%d')
-            ins_dt = datetime.now()
+            ins_dt = time.strftime('%Y%m%d%H%M%S')  # 14자리 문자열로 변경
 
             return {
                 "strd_dt": strd_dt,

@@ -113,7 +113,7 @@ class NaverBlogCrawler:
         print(f"[네이버 블로그 검색] 데이터 파싱 시작: {len(raw_data)}개 아이템")
         
         strd_dt = time.strftime('%Y%m%d')
-        ins_dt = datetime.now()
+        ins_dt = time.strftime('%Y%m%d%H%M%S')  # 14자리 문자열로 변경
         
         parsed_data = []
         

@@ -12,7 +12,7 @@ class NaverFinance(Base):
     pre_price = Column(BigInteger)
     today_price = Column(BigInteger)
     trading_volume = Column(BigInteger)
-    ins_dt = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    ins_dt = Column(String(14), nullable=False, index=True)  # 14자리 문자열 YYYYMMDDHHMMSS
 
 # 202: EV Portal
 class EvTop(Base):
@@ -24,7 +24,7 @@ class EvTop(Base):
     receipt_way = Column(String(50))
     receipt_priority = Column(String(10))
     value = Column(Integer)
-    ins_dt = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    ins_dt = Column(String(14), nullable=False, index=True)  # 14자리 문자열 YYYYMMDDHHMMSS
 
 # 203: Global Market (FinanceDataReader)
 class MarketTop(Base):
@@ -48,7 +48,7 @@ class BlogCrawl(Base):
     keword = Column(String(200))  # 원문 오타(keword) 유지
     title = Column(String(500))
     link = Column(String(1000))
-    ins_dt = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    ins_dt = Column(String(14), nullable=False, index=True)  # 14자리 문자열 YYYYMMDDHHMMSS
 
 # 205: YouTube comments
 class YoutubeComment(Base):
