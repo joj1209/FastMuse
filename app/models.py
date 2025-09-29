@@ -58,8 +58,9 @@ class YoutubeComment(Base):
     keword = Column(String(200))
     link = Column(String(1000))
     video_id = Column(String(50))
+    main_text = Column(String(500))  # 댓글 내용 필드 추가
     comment_author = Column(String(200))
-    ins_dt = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    ins_dt = Column(String(14), nullable=False, index=True)
 
 # 206: Kakao AI Image
 class KakaoAIImage(Base):
