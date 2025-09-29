@@ -324,13 +324,28 @@
 
         <h1 class="visually-hidden">Headers examples</h1>
         <div class="container my-3">
+            <button class="btn btn-success me-2" onclick="runNaverFinanceCrawler()">네이버 금융 크롤링</button>
             <button class="btn btn-primary" onclick="runFinanceDataReader()">FinanceDataReader 실행</button>
         </div>
         <script>
+        async function runNaverFinanceCrawler() {
+            try {
+                const res = await fetch('/api/run/naver-finance-crawler', {method: 'POST'});
+                const data = await res.json();
+                alert(`네이버 금융 크롤링 완료!\n수집된 종목 수: ${data.count || 0}`);
+            } catch (error) {
+                alert(`네이버 금융 크롤링 오류: ${error.message}`);
+            }
+        }
+        
         async function runFinanceDataReader() {
-            const res = await fetch('/api/run/finance-data-reader', {method: 'POST'});
-            const data = await res.json();
-            alert('실행 완료! 데이터 row 수: ' + (data.rows ? data.rows.length : 0));
+            try {
+                const res = await fetch('/api/run/finance-data-reader', {method: 'POST'});
+                const data = await res.json();
+                alert('FinanceDataReader 실행 완료! 데이터 row 수: ' + (data.rows ? data.rows.length : 0));
+            } catch (error) {
+                alert(`FinanceDataReader 오류: ${error.message}`);
+            }
         }
         </script>
 
