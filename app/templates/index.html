@@ -192,7 +192,7 @@
                         </tr>`).join("");
                         break;
                     case 204:
-                        title = "FinanceDataReader 네이버 블로그 키워드 검색 : 시흥대야역 맛집";
+                        title = "네이버 블로그 키워드 검색 : 시흥대야역 맛집";
                         thead = `<tr>
                             <th>기준일자</th>
                             <th>검색어</th>
@@ -326,7 +326,8 @@
         <div class="container my-3">
             <button class="btn btn-success me-2" onclick="runNaverFinanceCrawler()">네이버 금융 크롤링</button>
             <button class="btn btn-warning me-2" onclick="runEvCarPortalCrawler()">EV 포털 크롤링</button>
-            <button class="btn btn-primary" onclick="runFinanceDataReader()">FinanceDataReader 실행</button>
+            <button class="btn btn-primary me-2" onclick="runFinanceDataReader()">FinanceDataReader 실행</button>
+            <button class="btn btn-info" onclick="runNaverBlogCrawler()">네이버 블로그 검색</button>
         </div>
         <script>
         async function runNaverFinanceCrawler() {
@@ -356,6 +357,16 @@
                 alert('FinanceDataReader 실행 완료! 데이터 row 수: ' + (data.rows ? data.rows.length : 0));
             } catch (error) {
                 alert(`FinanceDataReader 오류: ${error.message}`);
+            }
+        }
+        
+        async function runNaverBlogCrawler() {
+            try {
+                const res = await fetch('/api/run/naver-blog-crawler', {method: 'POST'});
+                const data = await res.json();
+                alert(`네이버 블로그 검색 완료!\n검색된 블로그 수: ${data.count || 0}\n키워드: 시흥대야역맛집`);
+            } catch (error) {
+                alert(`네이버 블로그 검색 오류: ${error.message}`);
             }
         }
         </script>

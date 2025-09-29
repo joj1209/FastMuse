@@ -11,6 +11,7 @@ from ..models import (
 from app.service.finance_data_reader_parser import FinanceDataReaderParser
 from app.service.naver_finance_crawler import NaverFinanceCrawler
 from app.service.ev_car_portal_crawler import EvCarPortalCrawler
+from app.service.naver_blog_crawler import NaverBlogCrawler
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -74,6 +75,32 @@ async def run_finance_data_reader(request: Request):
     parser.save_to_dbms_market_stock(df)
     # 결과 row 수 반환
     return JSONResponse({"rows": df.to_dict(orient="records")})
+
+@router.post("/run/naver-blog-crawler")
+async def run_naver_blog_crawler(request: Request):
+    """네이버 블로그 검색 크롤링 실행"""
+    try:
+        crawler = NaverBlogCrawler()
+        data_list = crawler.run()
+        
+        # datetime 객체를 문자열로 변환하여 JSON 직렬화 문제 해결
+        serializable_data = []
+        for data in data_list:
+            serializable_item = data.copy()
+            if 'ins_dt' in serializable_item and hasattr(serializable_item['ins_dt'], 'isoformat'):
+                serializable_item['ins_dt'] = serializable_item['ins_dt'].isoformat()
+            serializable_data.append(serializable_item)
+        
+        return JSONResponse({
+            "message": "네이버 블로그 검색 완료", 
+            "count": len(data_list), 
+            "data": serializable_data
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "네이버 블로그 검색 실행 중 오류 발생", "details": str(e)}
+        )
 
 # DB 연결 테스트 엔드포인트
 @router.get("/db/test")
