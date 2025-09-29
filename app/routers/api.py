@@ -13,6 +13,7 @@ from app.service.naver_finance_crawler import NaverFinanceCrawler
 from app.service.ev_car_portal_crawler import EvCarPortalCrawler
 from app.service.naver_blog_crawler import NaverBlogCrawler
 from app.service.youtube_comment_crawler import YoutubeCommentCrawler
+from app.service.kakao_talk_crawler import KakaoTalkCrawler
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -99,6 +100,26 @@ async def run_youtube_comment_crawler(request: Request):
         return JSONResponse(
             status_code=500,
             content={"error": "유튜브 댓글 검색 실행 중 오류 발생", "details": str(e)}
+        )
+
+@router.post("/run/kakao-talk-crawler")
+async def run_kakao_talk_crawler(request: Request):
+    """카카오톡 API 크롤러 실행"""
+    try:
+        import time
+        crawler = KakaoTalkCrawler()
+        result = crawler.run_crawl_kakao_talk()
+        
+        return JSONResponse({
+            "message": "카카오톡 API 실행 완료",
+            "result": result,
+            "timestamp": time.strftime('%Y%m%d%H%M%S')
+        })
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "카카오톡 API 실행 중 오류 발생", "details": str(e)}
         )
 
 # DB 연결 테스트 엔드포인트

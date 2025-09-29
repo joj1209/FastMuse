@@ -75,38 +75,38 @@ class NaverFinanceCrawler:
 
     def get_stock_data(self):
         """모든 주식 종목의 데이터를 수집"""
-        print("[네이버 크롤링] 주식 데이터 수집 시작")
+        logger.info("[네이버 크롤링] 주식 데이터 수집 시작")
         results = []
 
         for code in self.stock_codes:
-            print(f"[네이버 크롤링] 종목 {code} 데이터 수집 중...")
+            logger.info(f"[네이버 크롤링] 종목 {code} 데이터 수집 중...")
             bsobj = self.crawl_stock_data(code)
             
             if bsobj:
                 data = self.parse_data(bsobj)
                 if data:
                     results.append(data)
-                    print(f"[네이버 크롤링] {data['stock_nm']}({code}) 수집 완료")
+                    logger.info(f"[네이버 크롤링] {data['stock_nm']}({code}) 수집 완료")
                 else:
-                    print(f"[네이버 크롤링] {code} 파싱 실패")
+                    logger.warning(f"[네이버 크롤링] {code} 파싱 실패")
             else:
-                print(f"[네이버 크롤링] {code} 크롤링 실패")
+                logger.warning(f"[네이버 크롤링] {code} 크롤링 실패")
             
             time.sleep(0.5)  # 서버 부하 방지
 
-        print(f"[네이버 크롤링] 총 {len(results)}개 종목 데이터 수집 완료")
+        logger.info(f"[네이버 크롤링] 총 {len(results)}개 종목 데이터 수집 완료")
         return results
 
     def save_to_db(self, data_list):
         """수집한 데이터를 데이터베이스에 저장"""
-        print("[네이버 크롤링] 데이터베이스 저장 시작")
+        logger.info("[네이버 크롤링] 데이터베이스 저장 시작")
         session = SessionLocal()
         
         try:
             # 오늘 날짜 데이터 삭제 (중복 방지)
             if data_list:
                 strd_dt_value = data_list[0]['strd_dt']
-                print(f"[네이버 크롤링] 기존 데이터 삭제 - strd_dt: {strd_dt_value}")
+                logger.info(f"[네이버 크롤링] 기존 데이터 삭제 - strd_dt: {strd_dt_value}")
                 session.query(NaverFinance).filter(NaverFinance.strd_dt == strd_dt_value).delete()
                 session.commit()
 
@@ -122,10 +122,10 @@ class NaverFinanceCrawler:
                     ins_dt=data['ins_dt']
                 )
                 session.add(obj)
-                print(f"[네이버 크롤링] DB 저장: {data['stock_nm']}({data['stock_cd']})")
+                logger.info(f"[네이버 크롤링] DB 저장: {data['stock_nm']}({data['stock_cd']})")
 
             session.commit()
-            print(f"[네이버 크롤링] 총 {len(data_list)}개 데이터 저장 완료")
+            logger.info(f"[네이버 크롤링] 총 {len(data_list)}개 데이터 저장 완료")
             
         except Exception as e:
             session.rollback()
@@ -142,7 +142,7 @@ class NaverFinanceCrawler:
                 self.save_to_db(data_list)
                 return data_list
             else:
-                print("[네이버 크롤링] 수집된 데이터가 없습니다.")
+                logger.warning("[네이버 크롤링] 수집된 데이터가 없습니다.")
                 return []
         except Exception as e:
             logger.error(f"네이버 금융 크롤링 실행 오류: {e}")

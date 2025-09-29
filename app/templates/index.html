@@ -328,7 +328,8 @@
             <button class="btn btn-warning me-2" onclick="runEvCarPortalCrawler()">EV 포털 크롤링</button>
             <button class="btn btn-primary me-2" onclick="runFinanceDataReader()">FinanceDataReader 실행</button>
             <button class="btn btn-info me-2" onclick="runNaverBlogCrawler()">네이버 블로그 검색</button>
-            <button class="btn btn-secondary" onclick="runYoutubeCommentCrawler()">유튜브 댓글 검색</button>
+            <button class="btn btn-secondary me-2" onclick="runYoutubeCommentCrawler()">유튜브 댓글 검색</button>
+            <button class="btn btn-dark" onclick="runKakaoTalkCrawler()">KakaoAPI Talk</button>
         </div>
         <script>
         async function runNaverFinanceCrawler() {
@@ -378,6 +379,21 @@
                 alert(`유튜브 댓글 검색 완료!\n수집된 댓글 수: ${data.count || 0}\n키워드: 19인치노트북`);
             } catch (error) {
                 alert(`유튜브 댓글 검색 오류: ${error.message}`);
+            }
+        }
+        
+        async function runKakaoTalkCrawler() {
+            try {
+                const res = await fetch('/api/run/kakao-talk-crawler', {method: 'POST'});
+                const data = await res.json();
+                if (data.error) {
+                    alert('오류: ' + data.error);
+                } else {
+                    alert('카카오톡 메시지 전송이 완료되었습니다!\n' + data.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('카카오톡 API 실행 중 오류가 발생했습니다.');
             }
         }
         </script>
