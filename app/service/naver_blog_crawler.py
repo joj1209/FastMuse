@@ -1,6 +1,6 @@
 from app.db import SessionLocal
 from app.models import BlogCrawl
-from app.common.config import X_NAVER_CLIENT_ID, X_NAVER_CLIENT_SECRET
+from app.config import settings
 import requests
 import re
 import time
@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 class NaverBlogCrawler:
     def __init__(self):
         # 네이버 API 설정
-        self.X_NAVER_CLIENT_ID = X_NAVER_CLIENT_ID
-        self.X_NAVER_CLIENT_SECRET = X_NAVER_CLIENT_SECRET
+        self.X_NAVER_CLIENT_ID = settings.X_NAVER_CLIENT_ID
+        self.X_NAVER_CLIENT_SECRET = settings.X_NAVER_CLIENT_SECRET
         self.keyword = "시흥대야역맛집"
         self.api_url = "https://openapi.naver.com/v1/search/blog.json"
         

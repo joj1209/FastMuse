@@ -12,6 +12,7 @@ from app.service.finance_data_reader_parser import FinanceDataReaderParser
 from app.service.naver_finance_crawler import NaverFinanceCrawler
 from app.service.ev_car_portal_crawler import EvCarPortalCrawler
 from app.service.naver_blog_crawler import NaverBlogCrawler
+from app.service.youtube_comment_crawler import YoutubeCommentCrawler
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -79,6 +80,25 @@ async def run_naver_blog_crawler(request: Request):
         return JSONResponse(
             status_code=500,
             content={"error": "네이버 블로그 검색 실행 중 오류 발생", "details": str(e)}
+        )
+
+@router.post("/run/youtube-comment-crawler")
+async def run_youtube_comment_crawler(request: Request):
+    """유튜브 댓글 검색 크롤링 실행"""
+    try:
+        crawler = YoutubeCommentCrawler()
+        data_list = crawler.run()
+        
+        # ins_dt가 문자열이므로 직렬화 처리 불필요
+        return JSONResponse({
+            "message": "유튜브 댓글 검색 완료", 
+            "count": len(data_list), 
+            "data": data_list
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "유튜브 댓글 검색 실행 중 오류 발생", "details": str(e)}
         )
 
 # DB 연결 테스트 엔드포인트

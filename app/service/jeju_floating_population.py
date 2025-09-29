@@ -4,7 +4,7 @@ import json
 import time
 from urllib.parse import quote
 from datetime import date, timedelta, datetime
-from app.common import config
+from app.config import settings
 from app.common.common_func import save_data
 from app.common.logger import get_logger
 # from dbms.models.api_models import JejuApiFloatingPopulation
@@ -15,7 +15,7 @@ def api_call(start_dt: str, end_dt: str, emd_list: list[str]):
     """
     제주 데이터 허브 유동인구 API를 호출하고 데이터를 DataFrame으로 반환합니다.
     """
-    api_key = config.YOUR_APPKEY
+    api_key = settings.YOUR_APPKEY
     if not api_key:
         logger.error("Jeju API key(YOUR_APPKEY)가 .env 파일에 설정되지 않았습니다.")
         raise ValueError("Jeju API key가 설정되지 않았습니다.")
