@@ -10,6 +10,7 @@ from ..models import (
 )
 from app.service.finance_data_reader_parser import FinanceDataReaderParser
 from app.service.naver_finance_crawler import NaverFinanceCrawler
+from app.service.ev_car_portal_crawler import EvCarPortalCrawler
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -37,6 +38,32 @@ async def run_naver_finance_crawler(request: Request):
         return JSONResponse(
             status_code=500,
             content={"error": "네이버 금융 크롤링 실행 중 오류 발생", "details": str(e)}
+        )
+
+@router.post("/run/ev-car-portal-crawler")
+async def run_ev_car_portal_crawler(request: Request):
+    """EV 포털 크롤링 실행"""
+    try:
+        crawler = EvCarPortalCrawler()
+        data_list = crawler.run()
+        
+        # datetime 객체를 문자열로 변환하여 JSON 직렬화 문제 해결
+        serializable_data = []
+        for data in data_list:
+            serializable_item = data.copy()
+            if 'ins_dt' in serializable_item and hasattr(serializable_item['ins_dt'], 'isoformat'):
+                serializable_item['ins_dt'] = serializable_item['ins_dt'].isoformat()
+            serializable_data.append(serializable_item)
+        
+        return JSONResponse({
+            "message": "EV 포털 크롤링 완료", 
+            "count": len(data_list), 
+            "data": serializable_data
+        })
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "EV 포털 크롤링 실행 중 오류 발생", "details": str(e)}
         )
 
 @router.post("/run/finance-data-reader")
