@@ -239,8 +239,18 @@ def paging(
 
 # 201: Naver Finance Top 5 (dbms_naver_finance)
 @router.get("/stock/top5")
-def stock_top5(p: dict = Depends(paging), db: Session = Depends(get_db)):
+def stock_top5(
+    date: str = Query(None, description="조회할 날짜 (YYYY-MM-DD 형식)"),
+    p: dict = Depends(paging), 
+    db: Session = Depends(get_db)
+):
     q = db.query(NaverFinance).order_by(NaverFinance.ins_dt.desc(), NaverFinance.id.desc())
+    
+    # 날짜 필터링 추가
+    if date:
+        # strd_dt 컬럼으로 필터링 (YYYY-MM-DD 형식)
+        q = q.filter(NaverFinance.strd_dt == date)
+    
     total = q.count()
     rows = q.limit(p["limit"]).offset(p["offset"]).all()
     items = [
