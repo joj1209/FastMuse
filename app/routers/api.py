@@ -17,6 +17,7 @@ from app.service.kakao_talk_crawler import KakaoTalkCrawler
 from app.service.airflow_runner import AirflowRunner
 from app.service.seoul_public_data_crawler import SeoulPublicDataCrawler
 from app.service.jeju_public_data_crawler import JejuPublicDataCrawler
+from app.service.kma_public_data_crawler import KmaPublicDataCrawler
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -143,6 +144,26 @@ async def run_seoul_public_data_crawler(request: Request):
         return JSONResponse(
             status_code=500,
             content={"error": "서울 공공데이터 크롤러 실행 중 오류 발생", "details": str(e)}
+        )
+
+@router.post("/run/kma-public-data-crawler")
+async def run_kma_public_data_crawler(request: Request):
+    """기상청 공공데이터 크롤러 실행"""
+    try:
+        import time
+        crawler = KmaPublicDataCrawler()
+        result = crawler.run_kma_api_crawler()
+        
+        return JSONResponse({
+            "message": "기상청 공공데이터 크롤러 실행 완료",
+            "result": result,
+            "timestamp": time.strftime('%Y%m%d%H%M%S')
+        })
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "기상청 공공데이터 크롤러 실행 중 오류 발생", "details": str(e)}
         )
 
 @router.post("/run/jeju-public-data-crawler")
