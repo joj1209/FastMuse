@@ -248,8 +248,13 @@ def stock_top5(
     
     # 날짜 필터링 추가
     if date:
-        # strd_dt 컬럼으로 필터링 (YYYY-MM-DD 형식)
-        q = q.filter(NaverFinance.strd_dt == date)
+        # YYYY-MM-DD 형식을 YYYYMMDD 형식으로 변환
+        try:
+            formatted_date = date.replace('-', '')  # 2024-09-30 -> 20240930
+            q = q.filter(NaverFinance.strd_dt == formatted_date)
+        except Exception as e:
+            # 날짜 형식이 잘못된 경우에도 처리
+            pass
     
     total = q.count()
     rows = q.limit(p["limit"]).offset(p["offset"]).all()
