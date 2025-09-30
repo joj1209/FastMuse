@@ -324,9 +324,6 @@
 
         <h1 class="visually-hidden">Headers examples</h1>
         <div class="container my-3">
-            <button class="btn btn-warning me-2" onclick="runEvCarPortalCrawler()">EV 포털 크롤링</button>
-            <button class="btn btn-primary me-2" onclick="runFinanceDataReader()">FinanceDataReader 실행</button>
-            <button class="btn btn-info me-2" onclick="runNaverBlogCrawler()">네이버 블로그 검색</button>
             <button class="btn btn-secondary me-2" onclick="runYoutubeCommentCrawler()">유튜브 댓글 검색</button>
             <button class="btn btn-dark me-2" onclick="runKakaoTalkCrawler()">KakaoAPI Talk</button>
             <button class="btn btn-primary me-2" onclick="runKmaPublicDataCrawler()">
@@ -521,6 +518,39 @@
                 icon.innerHTML = '<use xlink:href="#chevron-down"/>';
             }
         }
+        
+        function toggleEvPortalSubmenu() {
+            const submenu = document.getElementById('evPortalSubmenu');
+            const icon = document.getElementById('evPortalToggleIcon');
+            
+            if (submenu.classList.contains('show')) {
+                icon.innerHTML = '<use xlink:href="#chevron-right"/>';
+            } else {
+                icon.innerHTML = '<use xlink:href="#chevron-down"/>';
+            }
+        }
+        
+        function toggleFinanceDataReaderSubmenu() {
+            const submenu = document.getElementById('financeDataReaderSubmenu');
+            const icon = document.getElementById('financeDataReaderToggleIcon');
+            
+            if (submenu.classList.contains('show')) {
+                icon.innerHTML = '<use xlink:href="#chevron-right"/>';
+            } else {
+                icon.innerHTML = '<use xlink:href="#chevron-down"/>';
+            }
+        }
+        
+        function toggleNaverApiSubmenu() {
+            const submenu = document.getElementById('naverApiSubmenu');
+            const icon = document.getElementById('naverApiToggleIcon');
+            
+            if (submenu.classList.contains('show')) {
+                icon.innerHTML = '<use xlink:href="#chevron-right"/>';
+            } else {
+                icon.innerHTML = '<use xlink:href="#chevron-down"/>';
+            }
+        }
         </script>
 
         <!-- header start -->
@@ -599,22 +629,73 @@
                             </div>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(202)">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="toggleEvPortalSubmenu()" data-bs-toggle="collapse" data-bs-target="#evPortalSubmenu" aria-expanded="false">
                                 <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
                                 EV Portal
+                                <svg class="bi ms-auto" id="evPortalToggleIcon"><use xlink:href="#chevron-right"/></svg>
                             </a>
+                            <div class="collapse" id="evPortalSubmenu">
+                                <ul class="nav nav-pills flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(202)">
+                                            <svg class="bi"><use xlink:href="#table"/></svg>
+                                            EV Portal 조회
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="runEvCarPortalCrawler()">
+                                            <svg class="bi"><use xlink:href="#play-circle"/></svg>
+                                            EV 포털 크롤링
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(203)">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="toggleFinanceDataReaderSubmenu()" data-bs-toggle="collapse" data-bs-target="#financeDataReaderSubmenu" aria-expanded="false">
                                 <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
                                 Finance Data Reader
+                                <svg class="bi ms-auto" id="financeDataReaderToggleIcon"><use xlink:href="#chevron-right"/></svg>
                             </a>
+                            <div class="collapse" id="financeDataReaderSubmenu">
+                                <ul class="nav nav-pills flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(203)">
+                                            <svg class="bi"><use xlink:href="#table"/></svg>
+                                            Finance Data Reader 조회
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="runFinanceDataReader()">
+                                            <svg class="bi"><use xlink:href="#play-circle"/></svg>
+                                            FinanceDataReader 실행
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(204)">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="toggleNaverApiSubmenu()" data-bs-toggle="collapse" data-bs-target="#naverApiSubmenu" aria-expanded="false">
                                 <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
                                 Naver API
+                                <svg class="bi ms-auto" id="naverApiToggleIcon"><use xlink:href="#chevron-right"/></svg>
                             </a>
+                            <div class="collapse" id="naverApiSubmenu">
+                                <ul class="nav nav-pills flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(204)">
+                                            <svg class="bi"><use xlink:href="#table"/></svg>
+                                            Naver API 조회
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="runNaverBlogCrawler()">
+                                            <svg class="bi"><use xlink:href="#play-circle"/></svg>
+                                            네이버 블로그 검색
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(205)">
