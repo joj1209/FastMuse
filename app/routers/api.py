@@ -143,6 +143,19 @@ async def run_airflow_bash_operator(request: Request):
             content={"error": "Airflow DAG 실행 중 오류 발생", "details": str(e)}
         )
 
+@router.get("/status/airflow")
+def check_airflow_status():
+    """Airflow Docker 상태를 확인합니다"""
+    try:
+        runner = AirflowRunner()
+        status = runner.check_docker_status()
+        return status
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Airflow 상태 확인 중 오류 발생", "details": str(e)}
+        )
+
 # DB 연결 테스트 엔드포인트
 @router.get("/db/test")
 def db_test(db: Session = Depends(get_db)):

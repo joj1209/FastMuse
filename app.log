@@ -1,0 +1,67 @@
+2025-09-28 20:58:11,019 - app.main - INFO - 애플리케이션 시작
+2025-09-28 20:58:11,020 - app.main - INFO - Creating database tables...
+2025-09-28 20:58:11,023 - app.main - INFO - Database tables created successfully
+2025-09-28 20:58:30,202 - app.service.scraper - INFO - 네이버 금융 데이터 스크래핑 시작
+2025-09-28 20:58:30,203 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-09-28 20:58:30,206 - httpx - DEBUG - load_verify_locations cafile='D:\\11. Project\\01. Python\\NextMuse\\venv\\Lib\\site-packages\\certifi\\cacert.pem'
+2025-09-28 20:58:30,618 - app.service.scraper - DEBUG - HTTP 요청 시작: https://finance.naver.com/sise/sise_market_sum.naver
+2025-09-28 20:58:30,620 - httpcore.connection - DEBUG - connect_tcp.started host='finance.naver.com' port=443 local_address=None timeout=20 socket_options=None
+2025-09-28 20:58:30,653 - httpcore.connection - DEBUG - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x00000223D66D5D90>
+2025-09-28 20:58:30,653 - httpcore.connection - DEBUG - start_tls.started ssl_context=<ssl.SSLContext object at 0x00000223D675EA50> server_hostname='finance.naver.com' timeout=20
+2025-09-28 20:58:30,668 - httpcore.connection - DEBUG - start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x00000223D66C7A10>
+2025-09-28 20:58:30,669 - httpcore.http11 - DEBUG - send_request_headers.started request=<Request [b'GET']>
+2025-09-28 20:58:30,669 - httpcore.http11 - DEBUG - send_request_headers.complete
+2025-09-28 20:58:30,670 - httpcore.http11 - DEBUG - send_request_body.started request=<Request [b'GET']>
+2025-09-28 20:58:30,670 - httpcore.http11 - DEBUG - send_request_body.complete
+2025-09-28 20:58:30,671 - httpcore.http11 - DEBUG - receive_response_headers.started request=<Request [b'GET']>
+2025-09-28 20:58:30,701 - httpcore.http11 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'200', [(b'date', b'Sun, 28 Sep 2025 11:58:30 GMT'), (b'cache-control', b'no-cache'), (b'expires', b'Thu, 01 Jan 1970 00:00:00 GMT'), (b'set-cookie', b'JSESSIONID=5B32D285EE3B89F90E594A03C3820BFC; Path=/; HttpOnly'), (b'content-language', b'ko'), (b'vary', b'Accept-Encoding,User-Agent'), (b'content-encoding', b'gzip'), (b'referrer-policy', b'unsafe-url'), (b'transfer-encoding', b'chunked'), (b'content-type', b'text/html;charset=EUC-KR'), (b'server', b'nfront'), (b'strict-transport-security', b'"max-age=31536000; includeSubDomains"'), (b'x-xss-protection', b'"1; mode=block"')])
+2025-09-28 20:58:30,703 - httpx - INFO - HTTP Request: GET https://finance.naver.com/sise/sise_market_sum.naver "HTTP/1.1 200 200"
+2025-09-28 20:58:30,703 - httpcore.http11 - DEBUG - receive_response_body.started request=<Request [b'GET']>
+2025-09-28 20:58:30,715 - httpcore.http11 - DEBUG - receive_response_body.complete
+2025-09-28 20:58:30,716 - httpcore.http11 - DEBUG - response_closed.started
+2025-09-28 20:58:30,717 - httpcore.http11 - DEBUG - response_closed.complete
+2025-09-28 20:58:30,717 - app.service.scraper - DEBUG - HTTP 요청 성공
+2025-09-28 20:58:30,718 - httpcore.connection - DEBUG - close.started
+2025-09-28 20:58:30,719 - httpcore.connection - DEBUG - close.complete
+2025-09-28 20:58:30,757 - app.service.scraper - INFO - DB 저장 시작: 0개의 주식 데이터
+2025-09-28 20:58:30,758 - app.service.scraper - INFO - DB 저장 완료
+2025-09-28 21:04:03,885 - app.main - INFO - 애플리케이션 시작
+2025-09-28 21:04:03,887 - app.main - INFO - Creating database tables...
+2025-09-28 21:04:03,891 - app.main - INFO - Database tables created successfully
+2025-09-28 21:07:12,976 - app.main - INFO - 애플리케이션 시작
+2025-09-28 21:07:12,976 - app.main - INFO - Creating database tables...
+2025-09-28 21:07:12,980 - app.main - INFO - Database tables created successfully
+2025-09-28 21:07:37,276 - app.main - INFO - 애플리케이션 시작
+2025-09-28 21:07:37,278 - app.main - INFO - Creating database tables...
+2025-09-28 21:07:37,283 - app.main - INFO - Database tables created successfully
+2025-09-28 21:10:03,646 - app.service.scraper - INFO - 네이버 금융 데이터 스크래핑 시작
+2025-09-28 21:10:03,648 - httpx - DEBUG - load_ssl_context verify=True cert=None trust_env=True http2=False
+2025-09-28 21:10:03,654 - httpx - DEBUG - load_verify_locations cafile='D:\\11. Project\\01. Python\\NextMuse\\venv\\Lib\\site-packages\\certifi\\cacert.pem'
+2025-09-28 21:10:04,550 - app.service.scraper - DEBUG - HTTP 요청 시작: https://finance.naver.com/sise/sise_market_sum.naver
+2025-09-28 21:10:04,552 - httpcore.connection - DEBUG - connect_tcp.started host='finance.naver.com' port=443 local_address=None timeout=20 socket_options=None
+2025-09-28 21:10:04,591 - httpcore.connection - DEBUG - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x000002B6B01B3800>
+2025-09-28 21:10:04,592 - httpcore.connection - DEBUG - start_tls.started ssl_context=<ssl.SSLContext object at 0x000002B6B0197E50> server_hostname='finance.naver.com' timeout=20
+2025-09-28 21:10:04,608 - httpcore.connection - DEBUG - start_tls.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x000002B6AF7892B0>
+2025-09-28 21:10:04,609 - httpcore.http11 - DEBUG - send_request_headers.started request=<Request [b'GET']>
+2025-09-28 21:10:04,610 - httpcore.http11 - DEBUG - send_request_headers.complete
+2025-09-28 21:10:04,610 - httpcore.http11 - DEBUG - send_request_body.started request=<Request [b'GET']>
+2025-09-28 21:10:04,610 - httpcore.http11 - DEBUG - send_request_body.complete
+2025-09-28 21:10:04,611 - httpcore.http11 - DEBUG - receive_response_headers.started request=<Request [b'GET']>
+2025-09-28 21:10:04,642 - httpcore.http11 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'200', [(b'date', b'Sun, 28 Sep 2025 12:10:04 GMT'), (b'cache-control', b'no-cache'), (b'expires', b'Thu, 01 Jan 1970 00:00:00 GMT'), (b'set-cookie', b'JSESSIONID=F645C4F53DC5E90370B8E6E98269E9F8; Path=/; HttpOnly'), (b'content-language', b'ko'), (b'vary', b'Accept-Encoding,User-Agent'), (b'content-encoding', b'gzip'), (b'referrer-policy', b'unsafe-url'), (b'transfer-encoding', b'chunked'), (b'content-type', b'text/html;charset=EUC-KR'), (b'server', b'nfront'), (b'strict-transport-security', b'"max-age=31536000; includeSubDomains"'), (b'x-xss-protection', b'"1; mode=block"')])
+2025-09-28 21:10:04,643 - httpx - INFO - HTTP Request: GET https://finance.naver.com/sise/sise_market_sum.naver "HTTP/1.1 200 200"
+2025-09-28 21:10:04,644 - httpcore.http11 - DEBUG - receive_response_body.started request=<Request [b'GET']>
+2025-09-28 21:10:04,653 - httpcore.http11 - DEBUG - receive_response_body.complete
+2025-09-28 21:10:04,654 - httpcore.http11 - DEBUG - response_closed.started
+2025-09-28 21:10:04,655 - httpcore.http11 - DEBUG - response_closed.complete
+2025-09-28 21:10:04,655 - app.service.scraper - DEBUG - HTTP 요청 성공
+2025-09-28 21:10:04,657 - httpcore.connection - DEBUG - close.started
+2025-09-28 21:10:04,657 - httpcore.connection - DEBUG - close.complete
+2025-09-28 21:10:04,718 - app.service.scraper - INFO - DB 저장 시작: 0개의 주식 데이터
+2025-09-28 21:10:04,719 - app.service.scraper - INFO - DB 저장 완료
+2025-09-28 21:14:26,552 - app.routers.api - INFO - Stock Top 5 데이터 조회 시작
+2025-09-28 21:14:26,566 - app.routers.api - INFO - 전체 레코드 수: 0
+2025-09-28 21:14:26,568 - app.routers.api - INFO - 조회된 레코드 수: 0
+2025-09-28 21:14:26,569 - app.routers.api - INFO - 데이터 변환 완료
+2025-09-28 21:21:37,683 - app.main - INFO - 애플리케이션 시작
+2025-09-28 21:21:37,684 - app.main - INFO - Creating database tables...
+2025-09-28 21:21:37,687 - app.main - INFO - Database tables created successfully

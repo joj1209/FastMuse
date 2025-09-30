@@ -89,7 +89,7 @@ class NaverFinanceCrawler:
                     logger.info(f"[네이버 크롤링] {data['stock_nm']}({code}) 수집 완료")
                 else:
                     logger.warning(f"[네이버 크롤링] {code} 파싱 실패")
-            else:
+            
                 logger.warning(f"[네이버 크롤링] {code} 크롤링 실패")
             
             time.sleep(0.5)  # 서버 부하 방지

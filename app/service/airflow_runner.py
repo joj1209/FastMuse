@@ -9,8 +9,21 @@ logger = logging.getLogger(__name__)
 
 class AirflowRunner:
     def __init__(self):
-        self.client = docker.from_env()
-        self.airflow_container_name = "airflow-scheduler"  # 실제 컨테이너명에 맞게 수정
+        try:
+            self.client = docker.from_env()
+            # Docker 연결 테스트
+            self.client.ping()
+            logger.info("[Airflow] Docker 클라이언트 연결 성공")
+        except docker.errors.DockerException as e:
+            logger.error(f"[Airflow] Docker 연결 실패: {e}")
+            self.client = None
+        except Exception as e:
+            logger.error(f"[Airflow] Docker 클라이언트 초기화 오류: {e}")
+            self.client = None
+            
+        self.airflow_container_name = "welcome-to-docker"  # 변경된 컨테이너명
+        self.airflow_image_name = "docker/welcome-to-docker"  # 이미지명으로 검색
+        self.dag_file_path = "airflow/dags/sec03/dags_bash_operator.py"  # DAG 파일 경로
         self.dag_id = "dags_bash_operator"  # DAG ID
         
     def trigger_airflow_dag(self, dag_id=None):
@@ -20,23 +33,63 @@ class AirflowRunner:
             
         logger.info(f"[Airflow] DAG 실행 시작 - DAG ID: {dag_id}")
         
+        # Docker 클라이언트 연결 확인
+        if self.client is None:
+            error_msg = "Docker 클라이언트 연결 실패. Docker Desktop이 실행 중인지 확인하세요."
+            logger.error(f"[Airflow] {error_msg}")
+            result = {"status": "error", "message": error_msg}
+            self.save_to_db(dag_id, result)
+            return result
+        
         try:
-            # Airflow 컨테이너 찾기
+            # Docker 컨테이너 찾기
             containers = self.client.containers.list()
             airflow_container = None
             
+            logger.info(f"[Airflow] 실행 중인 컨테이너 목록:")
             for container in containers:
-                if self.airflow_container_name in container.name or "airflow" in container.name.lower():
+                logger.info(f"  - 이름: '{container.name}', 이미지: {container.image.tags}")
+                
+            # 컨테이너 검색 시도 (이미지 기반 우선)
+            for container in containers:
+                container_name = container.name
+                image_tags = container.image.tags
+                
+                logger.info(f"[Airflow] 검색 중 - 컨테이너: '{container_name}', 이미지: {image_tags}")
+                
+                # 이미지 태그 기반 매칭 (우선순위 1)
+                image_matches = any(
+                    self.airflow_image_name in str(tag) or 
+                    "welcome-to-docker" in str(tag)
+                    for tag in image_tags
+                )
+                
+                # 컨테이너 이름 기반 매칭 (우선순위 2)
+                name_matches = (
+                    container_name == self.airflow_container_name or
+                    "welcome-to-docker" in container_name
+                )
+                
+                logger.info(f"[Airflow] 매칭 결과 - 이미지: {image_matches}, 이름: {name_matches}")
+                
+                if image_matches or name_matches:
                     airflow_container = container
-                    logger.info(f"[Airflow] 컨테이너 발견: {container.name}")
+                    logger.info(f"[Airflow] ✅ 대상 컨테이너 발견: '{container.name}' (이미지: {container.image.tags})")
                     break
             
             if not airflow_container:
-                logger.error("[Airflow] Airflow 컨테이너를 찾을 수 없습니다")
-                return {"status": "error", "message": "Airflow 컨테이너를 찾을 수 없습니다"}
+                container_list = [f"'{c.name}' (이미지: {c.image.tags})" for c in containers]
+                error_msg = (f"컨테이너를 찾을 수 없습니다.\n"
+                           f"찾는 이미지: '{self.airflow_image_name}'\n"
+                           f"찾는 이름: '{self.airflow_container_name}'\n"
+                           f"실행 중인 컨테이너: {container_list}")
+                logger.error(f"[Airflow] {error_msg}")
+                result = {"status": "error", "message": error_msg}
+                self.save_to_db(dag_id, result)
+                return result
             
-            # DAG 트리거 명령 실행
-            command = f"airflow dags trigger {dag_id}"
+            # Python 파일 직접 실행
+            command = f"python {self.dag_file_path}"
             logger.info(f"[Airflow] 실행 명령: {command}")
             
             result = airflow_container.exec_run(command)
@@ -45,22 +98,30 @@ class AirflowRunner:
             logger.info(f"[Airflow] 실행 결과: {output}")
             
             if result.exit_code == 0:
-                logger.info(f"[Airflow] DAG '{dag_id}' 성공적으로 트리거됨")
-                return {
+                logger.info(f"[Airflow] Python 파일 '{self.dag_file_path}' 성공적으로 실행됨")
+                success_result = {
                     "status": "success", 
-                    "message": f"DAG '{dag_id}' 실행이 트리거되었습니다",
+                    "message": f"Python 파일 '{self.dag_file_path}' 실행 완료",
+                    "output": output.strip(),
+                    "dag_id": dag_id
+                }
+                self.save_to_db(dag_id, success_result)
+                return success_result
+            else:
+                logger.error(f"[Airflow] Python 파일 실행 실패: {output}")
+                error_result = {
+                    "status": "error", 
+                    "message": f"Python 파일 실행 실패",
                     "output": output.strip()
                 }
-            else:
-                logger.error(f"[Airflow] DAG 트리거 실패: {output}")
-                return {
-                    "status": "error", 
-                    "message": f"DAG 트리거 실패: {output.strip()}"
-                }
+                self.save_to_db(dag_id, error_result)
+                return error_result
                 
         except Exception as e:
             logger.error(f"[Airflow] 실행 중 오류 발생: {e}")
-            return {"status": "error", "message": f"Airflow 실행 오류: {str(e)}"}
+            error_result = {"status": "error", "message": f"Airflow 실행 오류: {str(e)}"}
+            self.save_to_db(dag_id, error_result)
+            return error_result
     
     def check_dag_status(self, dag_id=None):
         """DAG 실행 상태를 확인합니다"""
@@ -72,7 +133,7 @@ class AirflowRunner:
             airflow_container = None
             
             for container in containers:
-                if self.airflow_container_name in container.name or "airflow" in container.name.lower():
+                if self.airflow_container_name in container.name or "welcome-to-docker" in container.name:
                     airflow_container = container
                     break
             
@@ -101,7 +162,7 @@ class AirflowRunner:
             airflow_container = None
             
             for container in containers:
-                if self.airflow_container_name in container.name or "airflow" in container.name.lower():
+                if self.airflow_container_name in container.name or "welcome-to-docker" in container.name:
                     airflow_container = container
                     break
             
@@ -183,3 +244,46 @@ class AirflowRunner:
     def run(self):
         """기존 호환성을 위한 run 메서드"""
         return self.run_bash_operator_dag()
+    
+    def check_docker_status(self):
+        """Docker 상태를 확인합니다"""
+        try:
+            if self.client is None:
+                return {
+                    "status": "error",
+                    "message": "Docker 클라이언트가 초기화되지 않았습니다. Docker Desktop이 실행 중인지 확인하세요.",
+                    "containers": []
+                }
+            
+            # Docker 연결 테스트
+            self.client.ping()
+            
+            # 실행 중인 컨테이너 목록
+            containers = self.client.containers.list()
+            container_info = []
+            
+            for container in containers:
+                container_info.append({
+                    "name": container.name,
+                    "image": container.image.tags[0] if container.image.tags else "unknown",
+                    "status": container.status
+                })
+            
+            return {
+                "status": "success",
+                "message": "Docker 연결 정상",
+                "containers": container_info
+            }
+            
+        except docker.errors.DockerException as e:
+            return {
+                "status": "error", 
+                "message": f"Docker 연결 오류: {str(e)}",
+                "containers": []
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Docker 상태 확인 오류: {str(e)}",
+                "containers": []
+            }
