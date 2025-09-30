@@ -330,8 +330,11 @@
             <button class="btn btn-info me-2" onclick="runNaverBlogCrawler()">네이버 블로그 검색</button>
             <button class="btn btn-secondary me-2" onclick="runYoutubeCommentCrawler()">유튜브 댓글 검색</button>
             <button class="btn btn-dark me-2" onclick="runKakaoTalkCrawler()">KakaoAPI Talk</button>
-            <button class="btn btn-success" onclick="runSeoulPublicDataCrawler()">
+            <button class="btn btn-success me-2" onclick="runSeoulPublicDataCrawler()">
                 <i class="fas fa-city"></i> 서울시공공데이터
+            </button>
+            <button class="btn btn-warning" onclick="runJejuPublicDataCrawler()">
+                <i class="fas fa-island-tropical"></i> 제주공공데이터
             </button>
         </div>
         <script>
@@ -419,6 +422,28 @@
             } catch (error) {
                 console.error('Error:', error);
                 alert('서울 공공데이터 수집 중 오류가 발생했습니다.');
+            }
+        }
+        
+        async function runJejuPublicDataCrawler() {
+            try {
+                const res = await fetch('/api/run/jeju-public-data-crawler', {method: 'POST'});
+                const data = await res.json();
+                
+                if (data.error) {
+                    alert('오류: ' + data.error);
+                } else if (data.result && data.result.status === 'success') {
+                    alert(`제주 공공데이터 수집이 완료되었습니다!\n` +
+                          `수집 건수: ${data.result.total_records}건\n` +
+                          `저장 건수: ${data.result.saved_records}건\n` +
+                          `날짜 범위: ${data.result.date_range}\n` +
+                          `수집 지역: ${data.result.regions ? data.result.regions.join(', ') : 'N/A'}`);
+                } else {
+                    alert('오류: ' + (data.result ? data.result.message : '알 수 없는 오류'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('제주 공공데이터 수집 중 오류가 발생했습니다.');
             }
         }
         
