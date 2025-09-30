@@ -20,15 +20,23 @@ class SeoulPublicDataCrawler:
         self.base_url = 'http://openapi.seoul.go.kr:8088'
         self.api_endpoint = 'SPOP_FORN_LONG_RESD_JACHI'
         
-        # 날짜 계산
-        self.pre_7_dt = (date.today() - timedelta(days=10)).strftime('%Y%m%d')
+        # 날짜 계산 - 좀 더 안전한 날짜 범위 시도
+        self.pre_7_dt = (date.today() - timedelta(days=7)).strftime('%Y%m%d')  # 7일 전으로 변경
+        self.pre_1_dt = (date.today() - timedelta(days=1)).strftime('%Y%m%d')  # 1일 전도 추가
+        self.today_dt = date.today().strftime('%Y%m%d')  # 오늘 날짜도 추가
         self.strd_dt = time.strftime('%Y%m%d')
         self.ins_dt = time.strftime('%Y%m%d%H%M%S')
+        
+        logger.info(f"[서울공공데이터] 사용할 날짜들: 오늘={self.today_dt}, 1일전={self.pre_1_dt}, 7일전={self.pre_7_dt}")
 
-    def fetch_data_from_api(self, start_num, end_num):
+    def fetch_data_from_api(self, start_num, end_num, date_str=None):
         """서울 공공데이터 API에서 데이터를 가져옵니다"""
         try:
-            url = f'{self.base_url}/{self.apikey}/json/{self.api_endpoint}/{start_num}/{end_num}/{self.pre_7_dt}'
+            # 날짜가 지정되지 않으면 기본값 사용
+            if date_str is None:
+                date_str = self.pre_7_dt
+                
+            url = f'{self.base_url}/{self.apikey}/json/{self.api_endpoint}/{start_num}/{end_num}/{date_str}'
             logger.info(f"[서울공공데이터] API 호출: {url}")
             
             response = requests.get(url, timeout=30)
@@ -36,13 +44,19 @@ class SeoulPublicDataCrawler:
             
             json_data = response.json()
             
+            # 디버깅: 실제 응답 구조 확인
+            logger.info(f"[서울공공데이터] API 응답 키 목록: {list(json_data.keys())}")
+            logger.info(f"[서울공공데이터] 전체 응답 내용: {json_data}")
+            
             # 응답 데이터 확인
             if self.api_endpoint not in json_data:
                 logger.error(f"[서울공공데이터] API 응답에 {self.api_endpoint} 키가 없습니다")
+                logger.error(f"[서울공공데이터] 사용 가능한 키: {list(json_data.keys())}")
                 return None
                 
             if 'row' not in json_data[self.api_endpoint]:
                 logger.error(f"[서울공공데이터] API 응답에 row 데이터가 없습니다")
+                logger.error(f"[서울공공데이터] {self.api_endpoint} 내용: {json_data[self.api_endpoint]}")
                 return None
             
             raw_data = json_data[self.api_endpoint]['row']
@@ -159,11 +173,48 @@ class SeoulPublicDataCrawler:
             dataframes = []
             total_records = 0
             
+            # 여러 날짜를 시도해보기
+            date_candidates = [self.today_dt, self.pre_1_dt, self.pre_7_dt]
+            successful_date = None
+            
+            for test_date in date_candidates:
+                logger.info(f"[서울공공데이터] 날짜 {test_date}로 API 테스트 중...")
+                
+                # 1-5 구간으로 작은 범위 테스트
+                test_url = f'{self.base_url}/{self.apikey}/json/{self.api_endpoint}/1/5/{test_date}'
+                logger.info(f"[서울공공데이터] 테스트 URL: {test_url}")
+                
+                try:
+                    test_response = requests.get(test_url, timeout=30)
+                    test_response.raise_for_status()
+                    test_json = test_response.json()
+                    
+                    logger.info(f"[서울공공데이터] 날짜 {test_date} 응답: {test_json}")
+                    
+                    if self.api_endpoint in test_json and 'row' in test_json[self.api_endpoint]:
+                        successful_date = test_date
+                        logger.info(f"[서울공공데이터] 성공! 사용할 날짜: {successful_date}")
+                        break
+                    else:
+                        logger.warning(f"[서울공공데이터] 날짜 {test_date}: 유효한 데이터 없음")
+                        
+                except Exception as e:
+                    logger.warning(f"[서울공공데이터] 날짜 {test_date} 테스트 실패: {e}")
+                    continue
+            
+            if not successful_date:
+                error_msg = f"모든 날짜({date_candidates})에서 데이터를 찾을 수 없습니다. API 키나 서비스를 확인하세요."
+                logger.error(f"[서울공공데이터] {error_msg}")
+                return {"status": "error", "message": error_msg}
+            
+            # 성공한 날짜로 실제 데이터 수집
+            self.pre_7_dt = successful_date  # 성공한 날짜로 업데이트
+            
             # 1-50, 51-100 구간으로 데이터 조회
             data_ranges = [(1, 50), (51, 100)]
             
             for start_num, end_num in data_ranges:
-                logger.info(f"[서울공공데이터] 데이터 조회 중: {start_num}-{end_num}")
+                logger.info(f"[서울공공데이터] 데이터 조회 중: {start_num}-{end_num} (날짜: {successful_date})")
                 
                 df = self.fetch_data_from_api(start_num, end_num)
                 
@@ -198,7 +249,7 @@ class SeoulPublicDataCrawler:
                 "total_records": total_records,
                 "saved_records": saved_count,
                 "api_endpoint": self.api_endpoint,
-                "date_range": self.pre_7_dt
+                "date_range": successful_date
             }
             
         except Exception as e:
