@@ -511,6 +511,17 @@
                 icon.innerHTML = '<use xlink:href="#chevron-down"/>';
             }
         }
+        
+        function toggleNaverFinanceSubmenu() {
+            const submenu = document.getElementById('naverFinanceSubmenu');
+            const icon = document.getElementById('naverFinanceToggleIcon');
+            
+            if (submenu.classList.contains('show')) {
+                icon.innerHTML = '<use xlink:href="#chevron-right"/>';
+            } else {
+                icon.innerHTML = '<use xlink:href="#chevron-down"/>';
+            }
+        }
         </script>
 
         <!-- header start -->
@@ -566,10 +577,21 @@
                     </h6>
                     <ul class="nav nav-pills flex-column mb-auto gap-2">
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(201)">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="toggleNaverFinanceSubmenu()" data-bs-toggle="collapse" data-bs-target="#naverFinanceSubmenu" aria-expanded="false">
                                 <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
                                 Naver Finance
+                                <svg class="bi ms-auto" id="naverFinanceToggleIcon"><use xlink:href="#chevron-right"/></svg>
                             </a>
+                            <div class="collapse" id="naverFinanceSubmenu">
+                                <ul class="nav nav-pills flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(201)">
+                                            <svg class="bi"><use xlink:href="#table"/></svg>
+                                            Naver Finance 조회
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(202)">
