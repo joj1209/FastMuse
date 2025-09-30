@@ -66,6 +66,11 @@ class SeoulPublicDataCrawler:
             raw_data = json_data[self.api_endpoint]['row']
             logger.info(f"[서울공공데이터] 데이터 {len(raw_data)}건 조회 완료")
             
+            # 디버깅: 실제 데이터 구조 확인
+            if raw_data:
+                logger.info(f"[서울공공데이터] 첫 번째 레코드 키: {list(raw_data[0].keys())}")
+                logger.info(f"[서울공공데이터] 첫 번째 레코드 샘플: {raw_data[0]}")
+            
             return pd.DataFrame(raw_data)
             
         except requests.exceptions.RequestException as e:
@@ -85,6 +90,10 @@ class SeoulPublicDataCrawler:
             data = pd.concat(dataframes, ignore_index=True)
             logger.info(f"[서울공공데이터] 전체 데이터 {len(data)}건 병합 완료")
             
+            # 디버깅: 원본 데이터 컬럼명 확인
+            logger.info(f"[서울공공데이터] 원본 컬럼명: {list(data.columns)}")
+            logger.info(f"[서울공공데이터] 첫 번째 레코드 샘플: {data.iloc[0].to_dict() if len(data) > 0 else 'No data'}")
+            
             # 필요한 컬럼 추가
             data.insert(0, 'strd_dt', self.strd_dt)
             data['ins_dt'] = self.ins_dt
@@ -92,29 +101,23 @@ class SeoulPublicDataCrawler:
             # 인덱스 재배열
             df = data.reset_index(drop=True)
             
-            # 기존 컬럼 순서에 맞게 정렬 (SeoulForPop 모델 기준)
-            # 원본 컬럼들을 기존 모델 필드에 매핑
-            if len(df.columns) >= 8:
-                df.columns = [
-                    'strd_dt',           # 기준일자
-                    'stdr_de_id',        # 기준_일_ID
-                    'tmzon_pd_se',       # 시간대_코드_구분
-                    'adstrd_code_se',    # 자치구_코드_구분
-                    'tot_lvpop_co',      # 총_생활인구_수
-                    'china_staypop_co',  # 중국_체류인구_수
-                    'etc_staypop_co',    # 기타_체류인구_수
-                    'ins_dt'             # 입력일시
-                ]
-            else:
-                # 컬럼이 부족한 경우 기본값으로 채움
-                required_columns = ['strd_dt', 'stdr_de_id', 'tmzon_pd_se', 'adstrd_code_se', 
-                                  'tot_lvpop_co', 'china_staypop_co', 'etc_staypop_co', 'ins_dt']
-                for col in required_columns:
-                    if col not in df.columns:
-                        df[col] = ''
-                df = df[required_columns]
+            # 실제 API 응답 컬럼명에 맞춰서 매핑 (임의 재배열 제거)
+            # 컬럼명을 직접 확인하여 매핑하도록 수정
+            logger.info(f"[서울공공데이터] 매핑 전 전체 컬럼: {list(df.columns)}")
+            
+            # SeoulForPop 모델에 맞는 컬럼명으로 매핑
+            column_mapping = {
+                'strd_dt': 'strd_dt',           # 기준일자 (추가된 컬럼)
+                'ins_dt': 'ins_dt'              # 입력일시 (추가된 컬럼)
+            }
+            
+            # API 응답 컬럼명을 모델 컬럼명으로 매핑 (실제 컬럼명 확인 후 매핑)
+            for col in df.columns:
+                if col not in ['strd_dt', 'ins_dt']:  # 추가한 컬럼 제외
+                    logger.info(f"[서울공공데이터] 원본 컬럼 '{col}' 값 샘플: {df[col].iloc[0] if len(df) > 0 else 'No data'}")
             
             logger.info(f"[서울공공데이터] 데이터 가공 완료 - 최종 {len(df)}건")
+            logger.info(f"[서울공공데이터] 최종 컬럼명: {list(df.columns)}")
             return df
             
         except Exception as e:
@@ -137,13 +140,33 @@ class SeoulPublicDataCrawler:
             # DataFrame을 dict 레코드로 변환하여 저장
             records = df.to_dict('records')
             
-            for record in records:
-                # 정수형 변환 처리
+            logger.info(f"[서울공공데이터] 저장할 레코드 수: {len(records)}")
+            if records:
+                logger.info(f"[서울공공데이터] 첫 번째 레코드 예시: {records[0]}")
+            
+            for i, record in enumerate(records):
+                # 디버깅: 각 레코드의 주요 값 확인
+                if i < 3:  # 처음 3개 레코드만 로깅
+                    logger.info(f"[서울공공데이터] 레코드 {i+1} 원본: {record}")
+                
+                # 정수형 변환 처리 - 실제 컬럼명 확인 후 수정 필요
                 try:
-                    record['tot_lvpop_co'] = int(record.get('tot_lvpop_co', 0) or 0)
-                    record['china_staypop_co'] = int(record.get('china_staypop_co', 0) or 0)
-                    record['etc_staypop_co'] = int(record.get('etc_staypop_co', 0) or 0)
-                except (ValueError, TypeError):
+                    # 기존 방식 유지하되 값이 있는지 확인
+                    tot_val = record.get('tot_lvpop_co', 0)
+                    china_val = record.get('china_staypop_co', 0)
+                    etc_val = record.get('etc_staypop_co', 0)
+                    
+                    logger.info(f"[서울공공데이터] 레코드 {i+1} 변환 전 값: tot={tot_val}, china={china_val}, etc={etc_val}")
+                    
+                    record['tot_lvpop_co'] = int(tot_val or 0)
+                    record['china_staypop_co'] = int(china_val or 0)
+                    record['etc_staypop_co'] = int(etc_val or 0)
+                    
+                    if i < 3:
+                        logger.info(f"[서울공공데이터] 레코드 {i+1} 변환 후: tot={record['tot_lvpop_co']}, china={record['china_staypop_co']}, etc={record['etc_staypop_co']}")
+                        
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"[서울공공데이터] 레코드 {i+1} 변환 실패: {e}")
                     # 변환 실패시 0으로 설정
                     record['tot_lvpop_co'] = 0
                     record['china_staypop_co'] = 0
