@@ -595,6 +595,17 @@
                 icon.innerHTML = '<use xlink:href="#chevron-down"/>';
             }
         }
+        
+        function togglePublicApiSubmenu() {
+            const submenu = document.getElementById('publicApiSubmenu');
+            const icon = document.getElementById('publicApiToggleIcon');
+            
+            if (submenu.classList.contains('show')) {
+                icon.innerHTML = '<use xlink:href="#chevron-right"/>';
+            } else {
+                icon.innerHTML = '<use xlink:href="#chevron-down"/>';
+            }
+        }
         </script>
 
         <!-- header start -->
@@ -794,10 +805,21 @@
                             </div>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(208)">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="togglePublicApiSubmenu()" data-bs-toggle="collapse" data-bs-target="#publicApiSubmenu" aria-expanded="false">
                                 <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
                                 Public API
+                                <svg class="bi ms-auto" id="publicApiToggleIcon"><use xlink:href="#chevron-right"/></svg>
                             </a>
+                            <div class="collapse" id="publicApiSubmenu">
+                                <ul class="nav nav-pills flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(208)">
+                                            <svg class="bi"><use xlink:href="#table"/></svg>
+                                            Public API 조회
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="toggleKmaApiSubmenu()" data-bs-toggle="collapse" data-bs-target="#kmaApiSubmenu" aria-expanded="false">
