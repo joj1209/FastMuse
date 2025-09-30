@@ -20,14 +20,18 @@ class SeoulPublicDataCrawler:
         self.base_url = 'http://openapi.seoul.go.kr:8088'
         self.api_endpoint = 'SPOP_FORN_LONG_RESD_JACHI'
         
-        # 날짜 계산 - 좀 더 안전한 날짜 범위 시도
-        self.pre_7_dt = (date.today() - timedelta(days=7)).strftime('%Y%m%d')  # 7일 전으로 변경
-        self.pre_1_dt = (date.today() - timedelta(days=1)).strftime('%Y%m%d')  # 1일 전도 추가
-        self.today_dt = date.today().strftime('%Y%m%d')  # 오늘 날짜도 추가
+        # 날짜 계산 - 더 넓은 범위로 시도 (1년 전까지)
+        self.today_dt = date.today().strftime('%Y%m%d')  # 오늘 날짜
+        self.pre_1_dt = (date.today() - timedelta(days=1)).strftime('%Y%m%d')  # 1일 전
+        self.pre_7_dt = (date.today() - timedelta(days=7)).strftime('%Y%m%d')  # 7일 전
+        self.pre_30_dt = (date.today() - timedelta(days=30)).strftime('%Y%m%d')  # 30일 전
+        self.pre_90_dt = (date.today() - timedelta(days=90)).strftime('%Y%m%d')  # 90일 전
+        self.pre_365_dt = (date.today() - timedelta(days=365)).strftime('%Y%m%d')  # 1년 전
+        
         self.strd_dt = time.strftime('%Y%m%d')
         self.ins_dt = time.strftime('%Y%m%d%H%M%S')
         
-        logger.info(f"[서울공공데이터] 사용할 날짜들: 오늘={self.today_dt}, 1일전={self.pre_1_dt}, 7일전={self.pre_7_dt}")
+        logger.info(f"[서울공공데이터] 사용할 날짜들: 오늘={self.today_dt}, 1일전={self.pre_1_dt}, 7일전={self.pre_7_dt}, 30일전={self.pre_30_dt}, 90일전={self.pre_90_dt}, 1년전={self.pre_365_dt}")
 
     def fetch_data_from_api(self, start_num, end_num, date_str=None):
         """서울 공공데이터 API에서 데이터를 가져옵니다"""
@@ -173,8 +177,15 @@ class SeoulPublicDataCrawler:
             dataframes = []
             total_records = 0
             
-            # 여러 날짜를 시도해보기
-            date_candidates = [self.today_dt, self.pre_1_dt, self.pre_7_dt]
+            # 여러 날짜를 시도해보기 - 1년 전까지 확장
+            date_candidates = [
+                self.today_dt, 
+                self.pre_1_dt, 
+                self.pre_7_dt, 
+                self.pre_30_dt, 
+                self.pre_90_dt, 
+                self.pre_365_dt
+            ]
             successful_date = None
             
             for test_date in date_candidates:
