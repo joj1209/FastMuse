@@ -94,6 +94,10 @@ class SeoulPublicDataCrawler:
             logger.info(f"[서울공공데이터] 원본 컬럼명: {list(data.columns)}")
             logger.info(f"[서울공공데이터] 첫 번째 레코드 샘플: {data.iloc[0].to_dict() if len(data) > 0 else 'No data'}")
             
+            # 컬럼명을 소문자로 변환 (API 응답이 대문자로 오는 경우 처리)
+            data.columns = [col.lower() for col in data.columns]
+            logger.info(f"[서울공공데이터] 소문자 변환 후 컬럼명: {list(data.columns)}")
+            
             # 필요한 컬럼 추가
             data.insert(0, 'strd_dt', self.strd_dt)
             data['ins_dt'] = self.ins_dt
@@ -115,6 +119,18 @@ class SeoulPublicDataCrawler:
             for col in df.columns:
                 if col not in ['strd_dt', 'ins_dt']:  # 추가한 컬럼 제외
                     logger.info(f"[서울공공데이터] 원본 컬럼 '{col}' 값 샘플: {df[col].iloc[0] if len(df) > 0 else 'No data'}")
+            
+            # 필수 컬럼이 있는지 확인하고 없으면 기본값으로 채움
+            required_columns = ['strd_dt', 'stdr_de_id', 'tmzon_pd_se', 'adstrd_code_se', 
+                              'tot_lvpop_co', 'china_staypop_co', 'etc_staypop_co', 'ins_dt']
+            
+            for col in required_columns:
+                if col not in df.columns:
+                    logger.warning(f"[서울공공데이터] 필수 컬럼 '{col}' 없음 - 기본값으로 설정")
+                    df[col] = '' if col in ['stdr_de_id', 'tmzon_pd_se', 'adstrd_code_se'] else 0
+            
+            # 필요한 컬럼만 선택
+            df = df[required_columns]
             
             logger.info(f"[서울공공데이터] 데이터 가공 완료 - 최종 {len(df)}건")
             logger.info(f"[서울공공데이터] 최종 컬럼명: {list(df.columns)}")
