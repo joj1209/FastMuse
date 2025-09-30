@@ -16,18 +16,23 @@ logger = logging.getLogger(__name__)
 class JejuPublicDataCrawler:
     def __init__(self):
         # 설정에서 API 키 가져오기 (없으면 기본값 사용)
-        self.apikey = getattr(settings, 'JEJU_API_KEY', 't_0pcpt_22ejt0p0p2b0o_r12j5e08_t')
+        self.apikey = getattr(settings, 'YOUR_APPKEY', 't_0pcpt_22ejt0p0p2b0o_r12j5e08_t')
         
         # 제주 유동인구 API 설정
         self.base_url = 'https://open.jejudatahub.net/api/proxy/Daaa1t3at3tt8a8DD3t55538t35Dab1t'
         
-        # 날짜 계산
-        self.pre_90_dt = (date.today() - timedelta(days=90)).strftime('%Y%m%d')
-        self.pre_150_dt = (date.today() - timedelta(days=150)).strftime('%Y%m%d')
+        # 날짜 계산 - 더 넓은 범위로 시도 (1년 전까지)
+        self.today_dt = date.today().strftime('%Y%m%d')  # 오늘 날짜
+        self.pre_30_dt = (date.today() - timedelta(days=30)).strftime('%Y%m%d')  # 30일 전
+        self.pre_90_dt = (date.today() - timedelta(days=90)).strftime('%Y%m%d')  # 90일 전
+        self.pre_150_dt = (date.today() - timedelta(days=150)).strftime('%Y%m%d')  # 150일 전
+        self.pre_365_dt = (date.today() - timedelta(days=365)).strftime('%Y%m%d')  # 1년 전
+        self.pre_730_dt = (date.today() - timedelta(days=730)).strftime('%Y%m%d')  # 2년 전
+        
         self.strd_dt = time.strftime('%Y%m%d')
         self.ins_dt = time.strftime('%Y%m%d%H%M%S')
         
-        logger.info(f"[제주공공데이터] 사용할 날짜 범위: {self.pre_150_dt} ~ {self.pre_90_dt}")
+        logger.info(f"[제주공공데이터] 사용할 날짜 범위들: 30일전={self.pre_30_dt}, 90일전={self.pre_90_dt}, 150일전={self.pre_150_dt}, 1년전={self.pre_365_dt}, 2년전={self.pre_730_dt}")
 
     def fetch_data_from_api(self, start_date, end_date, emd_name='아라동'):
         """제주 공공데이터 API에서 데이터를 가져옵니다"""
@@ -187,7 +192,7 @@ class JejuPublicDataCrawler:
         try:
             # API 키 확인
             if not self.apikey:
-                error_msg = "제주 API 키가 설정되지 않았습니다. JEJU_API_KEY 환경변수를 확인하세요."
+                error_msg = "제주 API 키가 설정되지 않았습니다. YOUR_APPKEY 환경변수를 확인하세요."
                 logger.error(f"[제주공공데이터] {error_msg}")
                 return {"status": "error", "message": error_msg}
             
@@ -197,10 +202,41 @@ class JejuPublicDataCrawler:
             # 여러 읍면동 지역을 순회 (예시: 아라동, 연동, 화북동, 삼양동, 노형동, 애월읍)
             emd_list = ['아라동', '연동', '화북동', '삼양동', '노형동', '애월읍']
             
-            for emd_name in emd_list:
-                logger.info(f"[제주공공데이터] {emd_name} 지역 데이터 조회 중...")
+            # 다양한 날짜 범위를 시도 (오래된 것부터 최근 순으로)
+            date_ranges = [
+                ("2년 전", self.pre_730_dt, self.pre_365_dt),
+                ("1년 전", self.pre_365_dt, self.pre_150_dt),
+                ("150일 전", self.pre_150_dt, self.pre_90_dt),
+                ("90일 전", self.pre_90_dt, self.pre_30_dt)
+            ]
+            
+            successful_date_range = None
+            
+            for date_label, start_date, end_date in date_ranges:
+                logger.info(f"[제주공공데이터] {date_label} 날짜 범위({start_date}~{end_date}) 테스트 중...")
                 
-                df = self.fetch_data_from_api(self.pre_150_dt, self.pre_90_dt, emd_name)
+                # 첫 번째 지역(아라동)으로 테스트
+                test_df = self.fetch_data_from_api(start_date, end_date, emd_list[0])
+                
+                if test_df is not None and not test_df.empty:
+                    successful_date_range = (start_date, end_date, date_label)
+                    logger.info(f"[제주공공데이터] 성공! 사용할 날짜 범위: {date_label}({start_date}~{end_date})")
+                    break
+                else:
+                    logger.warning(f"[제주공공데이터] {date_label}({start_date}~{end_date}): 데이터 없음")
+            
+            if not successful_date_range:
+                error_msg = f"모든 날짜 범위에서 데이터를 찾을 수 없습니다."
+                logger.error(f"[제주공공데이터] {error_msg}")
+                return {"status": "error", "message": error_msg}
+            
+            # 성공한 날짜 범위로 모든 지역 데이터 수집
+            start_date, end_date, date_label = successful_date_range
+            
+            for emd_name in emd_list:
+                logger.info(f"[제주공공데이터] {emd_name} 지역 데이터 조회 중... (날짜: {start_date}~{end_date})")
+                
+                df = self.fetch_data_from_api(start_date, end_date, emd_name)
                 
                 if df is not None and not df.empty:
                     dataframes.append(df)
@@ -232,7 +268,7 @@ class JejuPublicDataCrawler:
                 "message": f"제주 공공데이터 크롤링 완료",
                 "total_records": total_records,
                 "saved_records": saved_count,
-                "date_range": f"{self.pre_150_dt} ~ {self.pre_90_dt}",
+                "date_range": f"{start_date} ~ {end_date} ({date_label})",
                 "regions": emd_list
             }
             
