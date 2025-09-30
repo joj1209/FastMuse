@@ -4,7 +4,10 @@
         <link rel="icon" href="{{ url_for('static', path='favicon.ico') }}">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" >
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
-		<meta content="user-scalable=yes, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width" name="viewport">
+		<meta content="user-scalable=yes, initial        <h1 class="visually-hidden">Headers examples</h1>
+        <div class="container my-3">
+            <!-- 모든 크롤링 버튼들이 하위 메뉴로 이동되었습니다 -->
+        </div>ximum-scale=1, minimum-scale=1, width=device-width" name="viewport">
         <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
         <script>
             async function loadMainContent(menuNumber) {
@@ -571,6 +574,39 @@
                 icon.innerHTML = '<use xlink:href="#chevron-down"/>';
             }
         }
+        
+        function toggleKmaApiSubmenu() {
+            const submenu = document.getElementById('kmaApiSubmenu');
+            const icon = document.getElementById('kmaApiToggleIcon');
+            
+            if (submenu.classList.contains('show')) {
+                icon.innerHTML = '<use xlink:href="#chevron-right"/>';
+            } else {
+                icon.innerHTML = '<use xlink:href="#chevron-down"/>';
+            }
+        }
+        
+        function toggleJejuApiSubmenu() {
+            const submenu = document.getElementById('jejuApiSubmenu');
+            const icon = document.getElementById('jejuApiToggleIcon');
+            
+            if (submenu.classList.contains('show')) {
+                icon.innerHTML = '<use xlink:href="#chevron-right"/>';
+            } else {
+                icon.innerHTML = '<use xlink:href="#chevron-down"/>';
+            }
+        }
+        
+        function toggleSeoulApiSubmenu() {
+            const submenu = document.getElementById('seoulApiSubmenu');
+            const icon = document.getElementById('seoulApiToggleIcon');
+            
+            if (submenu.classList.contains('show')) {
+                icon.innerHTML = '<use xlink:href="#chevron-right"/>';
+            } else {
+                icon.innerHTML = '<use xlink:href="#chevron-down"/>';
+            }
+        }
         </script>
 
         <!-- header start -->
@@ -776,22 +812,73 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(209)">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="toggleKmaApiSubmenu()" data-bs-toggle="collapse" data-bs-target="#kmaApiSubmenu" aria-expanded="false">
                                 <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
-                                kma API
+                                KMA API
+                                <svg class="bi ms-auto" id="kmaApiToggleIcon"><use xlink:href="#chevron-right"/></svg>
                             </a>
+                            <div class="collapse" id="kmaApiSubmenu">
+                                <ul class="nav nav-pills flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(209)">
+                                            <svg class="bi"><use xlink:href="#table"/></svg>
+                                            KMA API 조회
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="runKmaPublicDataCrawler()">
+                                            <svg class="bi"><use xlink:href="#play-circle"/></svg>
+                                            기상청공공데이터
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(210)">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="toggleJejuApiSubmenu()" data-bs-toggle="collapse" data-bs-target="#jejuApiSubmenu" aria-expanded="false">
                                 <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
-                                Juju API
+                                Jeju API
+                                <svg class="bi ms-auto" id="jejuApiToggleIcon"><use xlink:href="#chevron-right"/></svg>
                             </a>
+                            <div class="collapse" id="jejuApiSubmenu">
+                                <ul class="nav nav-pills flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(210)">
+                                            <svg class="bi"><use xlink:href="#table"/></svg>
+                                            Jeju API 조회
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="runJejuPublicDataCrawler()">
+                                            <svg class="bi"><use xlink:href="#play-circle"/></svg>
+                                            제주공공데이터
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(211)">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="toggleSeoulApiSubmenu()" data-bs-toggle="collapse" data-bs-target="#seoulApiSubmenu" aria-expanded="false">
                                 <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
                                 Seoul API
+                                <svg class="bi ms-auto" id="seoulApiToggleIcon"><use xlink:href="#chevron-right"/></svg>
                             </a>
+                            <div class="collapse" id="seoulApiSubmenu">
+                                <ul class="nav nav-pills flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(211)">
+                                            <svg class="bi"><use xlink:href="#table"/></svg>
+                                            Seoul API 조회
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="runSeoulPublicDataCrawler()">
+                                            <svg class="bi"><use xlink:href="#play-circle"/></svg>
+                                            서울시공공데이터
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                         </li>
                     </ul>
 
