@@ -324,8 +324,6 @@
 
         <h1 class="visually-hidden">Headers examples</h1>
         <div class="container my-3">
-            <button class="btn btn-secondary me-2" onclick="runYoutubeCommentCrawler()">유튜브 댓글 검색</button>
-            <button class="btn btn-dark me-2" onclick="runKakaoTalkCrawler()">KakaoAPI Talk</button>
             <button class="btn btn-primary me-2" onclick="runKmaPublicDataCrawler()">
                 <i class="fas fa-cloud-sun"></i> 기상청공공데이터
             </button>
@@ -551,6 +549,28 @@
                 icon.innerHTML = '<use xlink:href="#chevron-down"/>';
             }
         }
+        
+        function toggleGoogleApiSubmenu() {
+            const submenu = document.getElementById('googleApiSubmenu');
+            const icon = document.getElementById('googleApiToggleIcon');
+            
+            if (submenu.classList.contains('show')) {
+                icon.innerHTML = '<use xlink:href="#chevron-right"/>';
+            } else {
+                icon.innerHTML = '<use xlink:href="#chevron-down"/>';
+            }
+        }
+        
+        function toggleKakaoApiSubmenu() {
+            const submenu = document.getElementById('kakaoApiSubmenu');
+            const icon = document.getElementById('kakaoApiToggleIcon');
+            
+            if (submenu.classList.contains('show')) {
+                icon.innerHTML = '<use xlink:href="#chevron-right"/>';
+            } else {
+                icon.innerHTML = '<use xlink:href="#chevron-down"/>';
+            }
+        }
         </script>
 
         <!-- header start -->
@@ -698,22 +718,56 @@
                             </div>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(205)">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="toggleGoogleApiSubmenu()" data-bs-toggle="collapse" data-bs-target="#googleApiSubmenu" aria-expanded="false">
                                 <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
                                 Google API
+                                <svg class="bi ms-auto" id="googleApiToggleIcon"><use xlink:href="#chevron-right"/></svg>
                             </a>
+                            <div class="collapse" id="googleApiSubmenu">
+                                <ul class="nav nav-pills flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(205)">
+                                            <svg class="bi"><use xlink:href="#table"/></svg>
+                                            Google API 조회
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="runYoutubeCommentCrawler()">
+                                            <svg class="bi"><use xlink:href="#play-circle"/></svg>
+                                            유튜브 댓글 검색
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(206)">
+                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="toggleKakaoApiSubmenu()" data-bs-toggle="collapse" data-bs-target="#kakaoApiSubmenu" aria-expanded="false">
                                 <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
                                 Kakao API
+                                <svg class="bi ms-auto" id="kakaoApiToggleIcon"><use xlink:href="#chevron-right"/></svg>
                             </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(207)">
-                                <svg class="bi"><use xlink:href="#file-earmark-text"/></svg>
-                                Kakao API(KaTalk)
-                            </a>
+                            <div class="collapse" id="kakaoApiSubmenu">
+                                <ul class="nav nav-pills flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(206)">
+                                            <svg class="bi"><use xlink:href="#table"/></svg>
+                                            Kakao AI Image 조회
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(207)">
+                                            <svg class="bi"><use xlink:href="#table"/></svg>
+                                            Kakao Talk 조회
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="runKakaoTalkCrawler()">
+                                            <svg class="bi"><use xlink:href="#play-circle"/></svg>
+                                            KakaoAPI Talk 실행
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(208)">
