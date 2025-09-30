@@ -165,7 +165,7 @@ class SeoulPublicDataCrawler:
                 if i < 3:  # 처음 3개 레코드만 로깅
                     logger.info(f"[서울공공데이터] 레코드 {i+1} 원본: {record}")
                 
-                # 정수형 변환 처리 - 실제 컬럼명 확인 후 수정 필요
+                # 정수형 변환 처리 - 소수점 있는 문자열 처리
                 try:
                     # 기존 방식 유지하되 값이 있는지 확인
                     tot_val = record.get('tot_lvpop_co', 0)
@@ -174,9 +174,22 @@ class SeoulPublicDataCrawler:
                     
                     logger.info(f"[서울공공데이터] 레코드 {i+1} 변환 전 값: tot={tot_val}, china={china_val}, etc={etc_val}")
                     
-                    record['tot_lvpop_co'] = int(tot_val or 0)
-                    record['china_staypop_co'] = int(china_val or 0)
-                    record['etc_staypop_co'] = int(etc_val or 0)
+                    # 소수점이 있는 문자열을 처리하기 위해 float를 거쳐서 int로 변환
+                    def safe_int_convert(value):
+                        if value is None or value == '':
+                            return 0
+                        try:
+                            # 문자열인 경우 float를 거쳐서 int로 변환
+                            if isinstance(value, str):
+                                return int(float(value))
+                            else:
+                                return int(value)
+                        except (ValueError, TypeError):
+                            return 0
+                    
+                    record['tot_lvpop_co'] = safe_int_convert(tot_val)
+                    record['china_staypop_co'] = safe_int_convert(china_val)
+                    record['etc_staypop_co'] = safe_int_convert(etc_val)
                     
                     if i < 3:
                         logger.info(f"[서울공공데이터] 레코드 {i+1} 변환 후: tot={record['tot_lvpop_co']}, china={record['china_staypop_co']}, etc={record['etc_staypop_co']}")
