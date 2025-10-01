@@ -233,8 +233,10 @@ def db_test(db: Session = Depends(get_db)):
 def paging(
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
+    start_date: str = Query(None, description="조회 시작일 (YYYY-MM-DD)"),
+    end_date: str = Query(None, description="조회 종료일 (YYYY-MM-DD)")
 ):
-    return {"limit": limit, "offset": offset}
+    return {"limit": limit, "offset": offset, "start_date": start_date, "end_date": end_date}
 
 @router.get("/stock/top5")
 def stock_top5(
@@ -316,7 +318,19 @@ def stock_all(db: Session = Depends(get_db)):
 # 202: EV Top 10
 @router.get("/ev/top10")
 def ev_top10(p: dict = Depends(paging), db: Session = Depends(get_db)):
+    start_date: str = p.get('start_date') if 'start_date' in p else None
+    end_date: str = p.get('end_date') if 'end_date' in p else None
     q = db.query(EvTop).order_by(EvTop.ins_dt.desc(), EvTop.id.desc())
+    if start_date and end_date:
+        start_dt = start_date.replace('-', '')[:8]
+        end_dt = end_date.replace('-', '')[:8]
+        if start_dt == end_dt:
+            q = q.filter(EvTop.strd_dt == start_dt)
+        else:
+            q = q.filter(EvTop.strd_dt >= start_dt, EvTop.strd_dt <= end_dt)
+    elif start_date:
+        start_dt = start_date.replace('-', '')[:8]
+        q = q.filter(EvTop.strd_dt == start_dt)
     total = q.count()
     rows = q.limit(p["limit"]).offset(p["offset"]).all()
     items = [dict(
@@ -338,7 +352,19 @@ def ev_all(db: Session = Depends(get_db)):
 # 203: Market Top 10
 @router.get("/market/top10")
 def market_top10(p: dict = Depends(paging), db: Session = Depends(get_db)):
+    start_date: str = p.get('start_date') if 'start_date' in p else None
+    end_date: str = p.get('end_date') if 'end_date' in p else None
     q = db.query(MarketTop).order_by(MarketTop.id.desc())
+    if start_date and end_date:
+        start_dt = start_date.replace('-', '')[:8]
+        end_dt = end_date.replace('-', '')[:8]
+        if start_dt == end_dt:
+            q = q.filter(MarketTop.strd_dt == start_dt)
+        else:
+            q = q.filter(MarketTop.strd_dt >= start_dt, MarketTop.strd_dt <= end_dt)
+    elif start_date:
+        start_dt = start_date.replace('-', '')[:8]
+        q = q.filter(MarketTop.strd_dt == start_dt)
     total = q.count()
     rows = q.limit(p["limit"]).offset(p["offset"]).all()
     items = [dict(
@@ -360,7 +386,19 @@ def market_all(db: Session = Depends(get_db)):
 # 204: Naver Blog
 @router.get("/blog/naver")
 def blog_naver(p: dict = Depends(paging), db: Session = Depends(get_db)):
+    start_date: str = p.get('start_date') if 'start_date' in p else None
+    end_date: str = p.get('end_date') if 'end_date' in p else None
     q = db.query(BlogCrawl).order_by(BlogCrawl.ins_dt.desc(), BlogCrawl.id.desc())
+    if start_date and end_date:
+        start_dt = start_date.replace('-', '')[:8]
+        end_dt = end_date.replace('-', '')[:8]
+        if start_dt == end_dt:
+            q = q.filter(BlogCrawl.strd_dt == start_dt)
+        else:
+            q = q.filter(BlogCrawl.strd_dt >= start_dt, BlogCrawl.strd_dt <= end_dt)
+    elif start_date:
+        start_dt = start_date.replace('-', '')[:8]
+        q = q.filter(BlogCrawl.strd_dt == start_dt)
     total = q.count()
     rows = q.limit(p["limit"]).offset(p["offset"]).all()
     items = [dict(
@@ -382,7 +420,19 @@ def blog_all(db: Session = Depends(get_db)):
 # 205: YouTube comments
 @router.get("/youtube/comments")
 def youtube_comments(p: dict = Depends(paging), db: Session = Depends(get_db)):
+    start_date: str = p.get('start_date') if 'start_date' in p else None
+    end_date: str = p.get('end_date') if 'end_date' in p else None
     q = db.query(YoutubeComment).order_by(YoutubeComment.ins_dt.desc(), YoutubeComment.id.desc())
+    if start_date and end_date:
+        start_dt = start_date.replace('-', '')[:8]
+        end_dt = end_date.replace('-', '')[:8]
+        if start_dt == end_dt:
+            q = q.filter(YoutubeComment.strd_dt == start_dt)
+        else:
+            q = q.filter(YoutubeComment.strd_dt >= start_dt, YoutubeComment.strd_dt <= end_dt)
+    elif start_date:
+        start_dt = start_date.replace('-', '')[:8]
+        q = q.filter(YoutubeComment.strd_dt == start_dt)
     total = q.count()
     rows = q.limit(p["limit"]).offset(p["offset"]).all()
     items = [dict(
@@ -406,7 +456,19 @@ def youtube_all(db: Session = Depends(get_db)):
 # 206: Kakao AI Image
 @router.get("/kakao/ai-image")
 def kakao_ai_image(p: dict = Depends(paging), db: Session = Depends(get_db)):
+    start_date: str = p.get('start_date') if 'start_date' in p else None
+    end_date: str = p.get('end_date') if 'end_date' in p else None
     q = db.query(KakaoAIImage).order_by(KakaoAIImage.id.desc())
+    if start_date and end_date:
+        start_dt = start_date.replace('-', '')[:8]
+        end_dt = end_date.replace('-', '')[:8]
+        if start_dt == end_dt:
+            q = q.filter(KakaoAIImage.strd_dt == start_dt)
+        else:
+            q = q.filter(KakaoAIImage.strd_dt >= start_dt, KakaoAIImage.strd_dt <= end_dt)
+    elif start_date:
+        start_dt = start_date.replace('-', '')[:8]
+        q = q.filter(KakaoAIImage.strd_dt == start_dt)
     total = q.count()
     rows = q.limit(p["limit"]).offset(p["offset"]).all()
     items = [dict(strd_dt=r.strd_dt, suggest_word=r.suggest_word) for r in rows]
@@ -422,7 +484,19 @@ def kakao_ai_image_all(db: Session = Depends(get_db)):
 # 207: Kakao Talk token
 @router.get("/kakao/talk")
 def kakao_talk(p: dict = Depends(paging), db: Session = Depends(get_db)):
+    start_date: str = p.get('start_date') if 'start_date' in p else None
+    end_date: str = p.get('end_date') if 'end_date' in p else None
     q = db.query(KakaoTalk).order_by(KakaoTalk.id.desc())
+    if start_date and end_date:
+        start_dt = start_date.replace('-', '')[:8]
+        end_dt = end_date.replace('-', '')[:8]
+        if start_dt == end_dt:
+            q = q.filter(KakaoTalk.strd_dt == start_dt)
+        else:
+            q = q.filter(KakaoTalk.strd_dt >= start_dt, KakaoTalk.strd_dt <= end_dt)
+    elif start_date:
+        start_dt = start_date.replace('-', '')[:8]
+        q = q.filter(KakaoTalk.strd_dt == start_dt)
     total = q.count()
     rows = q.limit(p["limit"]).offset(p["offset"]).all()
     items = [dict(
@@ -444,7 +518,19 @@ def kakao_talk_all(db: Session = Depends(get_db)):
 # 208: Public apt trade
 @router.get("/public/apt-trade")
 def public_apt_trade(p: dict = Depends(paging), db: Session = Depends(get_db)):
+    start_date: str = p.get('start_date') if 'start_date' in p else None
+    end_date: str = p.get('end_date') if 'end_date' in p else None
     q = db.query(PublicAptTrade).order_by(PublicAptTrade.id.desc())
+    if start_date and end_date:
+        start_dt = start_date.replace('-', '')[:8]
+        end_dt = end_date.replace('-', '')[:8]
+        if start_dt == end_dt:
+            q = q.filter(PublicAptTrade.strd_dt == start_dt)
+        else:
+            q = q.filter(PublicAptTrade.strd_dt >= start_dt, PublicAptTrade.strd_dt <= end_dt)
+    elif start_date:
+        start_dt = start_date.replace('-', '')[:8]
+        q = q.filter(PublicAptTrade.strd_dt == start_dt)
     total = q.count()
     rows = q.limit(p["limit"]).offset(p["offset"]).all()
     items = [dict(
@@ -468,7 +554,19 @@ def public_apt_trade_all(db: Session = Depends(get_db)):
 # 209: KMA forecast
 @router.get("/kma/forecast")
 def kma_forecast(p: dict = Depends(paging), db: Session = Depends(get_db)):
+    start_date: str = p.get('start_date') if 'start_date' in p else None
+    end_date: str = p.get('end_date') if 'end_date' in p else None
     q = db.query(KmaForecast).order_by(KmaForecast.id.desc())
+    if start_date and end_date:
+        start_dt = start_date.replace('-', '')[:8]
+        end_dt = end_date.replace('-', '')[:8]
+        if start_dt == end_dt:
+            q = q.filter(KmaForecast.strd_dt == start_dt)
+        else:
+            q = q.filter(KmaForecast.strd_dt >= start_dt, KmaForecast.strd_dt <= end_dt)
+    elif start_date:
+        start_dt = start_date.replace('-', '')[:8]
+        q = q.filter(KmaForecast.strd_dt == start_dt)
     total = q.count()
     rows = q.limit(p["limit"]).offset(p["offset"]).all()
     items = [dict(
@@ -490,7 +588,19 @@ def kma_forecast_all(db: Session = Depends(get_db)):
 # 210: Jeju visitors
 @router.get("/jeju/flo-pop")
 def jeju_flo_pop(p: dict = Depends(paging), db: Session = Depends(get_db)):
+    start_date: str = p.get('start_date') if 'start_date' in p else None
+    end_date: str = p.get('end_date') if 'end_date' in p else None
     q = db.query(JejuFloPop).order_by(JejuFloPop.id.desc())
+    if start_date and end_date:
+        start_dt = start_date.replace('-', '')[:8]
+        end_dt = end_date.replace('-', '')[:8]
+        if start_dt == end_dt:
+            q = q.filter(JejuFloPop.strd_dt == start_dt)
+        else:
+            q = q.filter(JejuFloPop.strd_dt >= start_dt, JejuFloPop.strd_dt <= end_dt)
+    elif start_date:
+        start_dt = start_date.replace('-', '')[:8]
+        q = q.filter(JejuFloPop.strd_dt == start_dt)
     total = q.count()
     rows = q.limit(p["limit"]).offset(p["offset"]).all()
     items = [dict(
@@ -514,7 +624,19 @@ def jeju_flo_pop_all(db: Session = Depends(get_db)):
 # 211: Seoul foreign pop
 @router.get("/seoul/for-pop")
 def seoul_for_pop(p: dict = Depends(paging), db: Session = Depends(get_db)):
+    start_date: str = p.get('start_date') if 'start_date' in p else None
+    end_date: str = p.get('end_date') if 'end_date' in p else None
     q = db.query(SeoulForPop).order_by(SeoulForPop.id.desc())
+    if start_date and end_date:
+        start_dt = start_date.replace('-', '')[:8]
+        end_dt = end_date.replace('-', '')[:8]
+        if start_dt == end_dt:
+            q = q.filter(SeoulForPop.strd_dt == start_dt)
+        else:
+            q = q.filter(SeoulForPop.strd_dt >= start_dt, SeoulForPop.strd_dt <= end_dt)
+    elif start_date:
+        start_dt = start_date.replace('-', '')[:8]
+        q = q.filter(SeoulForPop.strd_dt == start_dt)
     total = q.count()
     rows = q.limit(p["limit"]).offset(p["offset"]).all()
     items = [dict(
