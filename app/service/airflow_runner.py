@@ -320,6 +320,12 @@ class AirflowRunner:
             strd_dt = time.strftime('%Y%m%d')
             ins_dt = time.strftime('%Y%m%d%H%M%S')
             
+            # 메시지를 500자로 제한 (데이터베이스 컬럼 크기 제한)
+            message = result.get("message", "")
+            if len(message) > 500:
+                message = message[:497] + "..."
+                logger.info(f"[Airflow] 메시지가 500자를 초과하여 자름: {len(result.get('message', ''))}")
+            
             # 기존 데이터 삭제 (중복 방지)
             logger.info(f"[Airflow] 기존 데이터 삭제 - strd_dt: {strd_dt}, api_nm: Airflow")
             session.query(ApiBatchStat).filter(
@@ -334,7 +340,7 @@ class AirflowRunner:
                 api_nm="Airflow",
                 data_gb=dag_id,
                 data_cnt=1 if result["status"] == "success" else 0,
-                memo=result.get("message", ""),
+                memo=message,  # 제한된 길이의 메시지 사용
                 ins_dt=ins_dt
             )
             session.add(obj)
