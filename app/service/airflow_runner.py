@@ -46,11 +46,11 @@ class AirflowRunner:
         self.dag_id = "dags_bash_operator"  # DAG ID
         
     def trigger_airflow_dag(self, dag_id=None):
-        """Airflow DAG를 트리거합니다"""
+        """Airflow CLI를 사용하여 DAG를 트리거합니다"""
         if dag_id is None:
             dag_id = self.dag_id
             
-        logger.info(f"[Airflow] DAG 실행 시작 - DAG ID: {dag_id}")
+        logger.info(f"[Airflow] Airflow CLI DAG 실행 시작 - DAG ID: {dag_id}")
         
         # Docker 클라이언트 연결 확인
         if self.client is None:
@@ -69,7 +69,7 @@ class AirflowRunner:
             for container in containers:
                 logger.info(f"  - 이름: '{container.name}', 이미지: {container.image.tags}")
                 
-            # 1단계: 실제 Airflow 컨테이너 우선 검색
+            # Airflow 컨테이너 검색 (Airflow CLI가 있는 컨테이너만 사용)
             for candidate in self.airflow_container_candidates:
                 for container in containers:
                     if container.name == candidate:
@@ -78,7 +78,7 @@ class AirflowRunner:
                             airflow_test = container.exec_run("airflow version", timeout=10)
                             if airflow_test.exit_code == 0:
                                 airflow_container = container
-                                logger.info(f"[Airflow] ✅ 실제 Airflow 컨테이너 발견: '{container.name}'")
+                                logger.info(f"[Airflow] ✅ Airflow CLI 컨테이너 발견: '{container.name}'")
                                 logger.info(f"[Airflow] Airflow 버전: {airflow_test.output.decode('utf-8').strip()}")
                                 break
                             else:
@@ -89,191 +89,90 @@ class AirflowRunner:
                 if airflow_container:
                     break
             
-            # 2단계: Airflow 컨테이너를 찾지 못한 경우 일반 컨테이너 검색
-            if not airflow_container:
-                logger.info("[Airflow] 실제 Airflow 컨테이너를 찾지 못했습니다. 일반 컨테이너를 검색합니다.")
-                
-                for container in containers:
-                    container_name = container.name
-                    image_tags = container.image.tags
-                    
-                    logger.info(f"[Airflow] 검색 중 - 컨테이너: '{container_name}', 이미지: {image_tags}")
-                    
-                    # 이미지 태그 기반 매칭
-                    image_matches = any(
-                        self.airflow_image_name in str(tag) or 
-                        any(candidate in str(tag).lower() for candidate in self.container_candidates)
-                        for tag in image_tags
-                    )
-                    
-                    # 컨테이너 이름 기반 매칭
-                    name_matches = any(candidate in container_name.lower() for candidate in self.container_candidates)
-                    
-                    logger.info(f"[Airflow] 매칭 결과 - 이미지: {image_matches}, 이름: {name_matches}")
-                    
-                    if image_matches or name_matches:
-                        # Python 설치 여부 사전 확인
-                        try:
-                            python_test = container.exec_run("which python3 || which python || echo 'not_found'", timeout=5)
-                            python_available = python_test.exit_code == 0 and 'not_found' not in python_test.output.decode('utf-8')
-                            
-                            if python_available:
-                                airflow_container = container
-                                logger.info(f"[Airflow] ✅ Python 지원 컨테이너 발견: '{container.name}' (이미지: {container.image.tags})")
-                                break
-                            else:
-                                logger.info(f"[Airflow] ⚠️ Python 미지원 컨테이너: '{container.name}'")
-                                if not airflow_container:  # Python이 없어도 일단 저장 (fallback용)
-                                    airflow_container = container
-                        except Exception as e:
-                            logger.warning(f"[Airflow] 컨테이너 '{container.name}' Python 확인 실패: {e}")
-                            if not airflow_container:  # 확인 실패해도 일단 저장 (fallback용)
-                                airflow_container = container
-            
             if not airflow_container:
                 container_list = [f"'{c.name}' (이미지: {c.image.tags})" for c in containers]
-                error_msg = (f"적합한 컨테이너를 찾을 수 없습니다.\n"
+                error_msg = (f"Airflow CLI가 설치된 컨테이너를 찾을 수 없습니다.\n"
                            f"Airflow 컨테이너 후보: {self.airflow_container_candidates}\n"
-                           f"일반 컨테이너 후보: {self.container_candidates}\n"
                            f"실행 중인 컨테이너: {container_list}\n"
-                           f"권장사항: 실제 Airflow 컨테이너(apache/airflow)를 실행하거나 Python이 설치된 컨테이너를 사용하세요.")
+                           f"권장사항: apache/airflow 이미지로 Airflow 컨테이너를 실행하세요.")
                 logger.error(f"[Airflow] {error_msg}")
                 result = {"status": "error", "message": error_msg}
                 self.save_to_db(dag_id, result)
                 return result
             
-            # 실행 명령어 결정 (Airflow CLI 우선)
-            airflow_test = airflow_container.exec_run("airflow version", timeout=5)
-            is_airflow_container = airflow_test.exit_code == 0
+            # Airflow CLI로 DAG 실행
+            logger.info(f"[Airflow] Airflow CLI 컨테이너 사용: {airflow_container.name}")
             
-            if is_airflow_container:
-                # 실제 Airflow 컨테이너인 경우 - Airflow CLI 사용
-                logger.info(f"[Airflow] 실제 Airflow 컨테이너 사용: {airflow_container.name}")
-                
-                # DAG 목록 확인
-                dag_list_cmd = "airflow dags list"
-                dag_list_result = airflow_container.exec_run(dag_list_cmd, timeout=15)
-                logger.info(f"[Airflow] 사용 가능한 DAG 목록:\n{dag_list_result.output.decode('utf-8')}")
-                
-                # DAG 트리거 (예시: example_bash_operator 또는 사용자 DAG)
-                trigger_cmd = f"airflow dags trigger {dag_id}"
-                logger.info(f"[Airflow] 실행 명령: {trigger_cmd}")
-                
-                result = airflow_container.exec_run(trigger_cmd, timeout=30)
-                output = result.output.decode('utf-8')
-                
-                logger.info(f"[Airflow] DAG 트리거 결과: {output}")
-                
-                if result.exit_code == 0:
-                    success_result = {
-                        "status": "success", 
-                        "message": f"Airflow DAG '{dag_id}' 트리거 성공",
-                        "output": output.strip(),
-                        "dag_id": dag_id,
-                        "container": airflow_container.name
-                    }
-                    self.save_to_db(dag_id, success_result)
-                    return success_result
+            # 1. DAG 목록 확인
+            dag_list_cmd = "airflow dags list"
+            dag_list_result = airflow_container.exec_run(dag_list_cmd, timeout=30)
+            logger.info(f"[Airflow] 사용 가능한 DAG 목록:\n{dag_list_result.output.decode('utf-8')}")
+            
+            # 2. DAG 존재 여부 확인
+            dag_info_cmd = f"airflow dags show {dag_id}"
+            dag_info_result = airflow_container.exec_run(dag_info_cmd, timeout=15)
+            dag_exists = dag_info_result.exit_code == 0
+            
+            if not dag_exists:
+                logger.warning(f"[Airflow] DAG '{dag_id}'가 존재하지 않습니다. 사용 가능한 예시 DAG를 실행합니다.")
+                # 예시 DAG 목록에서 bash_operator 관련 찾기
+                available_dags = dag_list_result.output.decode('utf-8')
+                if "example_bash_operator" in available_dags:
+                    dag_id = "example_bash_operator"
+                    logger.info(f"[Airflow] 예시 DAG 'example_bash_operator'를 실행합니다.")
                 else:
-                    # DAG가 없는 경우 예시 DAG 실행
-                    if "does not exist" in output.lower() or "not found" in output.lower():
-                        logger.info(f"[Airflow] DAG '{dag_id}'가 없어서 예시 DAG를 실행합니다")
-                        example_cmd = "airflow dags trigger example_bash_operator"
-                        example_result = airflow_container.exec_run(example_cmd, timeout=30)
-                        example_output = example_result.output.decode('utf-8')
-                        
-                        if example_result.exit_code == 0:
-                            success_result = {
-                                "status": "success", 
-                                "message": f"예시 DAG 'example_bash_operator' 실행 성공",
-                                "output": example_output.strip(),
-                                "dag_id": "example_bash_operator",
-                                "container": airflow_container.name
-                            }
-                            self.save_to_db("example_bash_operator", success_result)
-                            return success_result
-                    
-                    error_result = {
-                        "status": "error", 
-                        "message": f"Airflow DAG 실행 실패",
-                        "output": output.strip(),
-                        "container": airflow_container.name
-                    }
-                    self.save_to_db(dag_id, error_result)
-                    return error_result
-            else:
-                # 일반 컨테이너인 경우 - Python 파일 실행 로직 유지
-                # 컨테이너 환경 확인 및 적절한 명령 실행
-                # 먼저 Python 설치 여부 확인
-                python_check = airflow_container.exec_run("which python3 || which python || echo 'not_found'")
-                python_path = python_check.output.decode('utf-8').strip()
-                
-                logger.info(f"[Airflow] Python 경로 확인: {python_path}")
-                
-                if python_path == 'not_found' or python_check.exit_code != 0:
-                    # Python이 없는 경우, 컨테이너 정보를 기록하고 mock 실행
-                    logger.warning(f"[Airflow] 컨테이너에 Python이 설치되어 있지 않습니다.")
-                    
-                    # 컨테이너 정보 수집
-                    whoami_result = airflow_container.exec_run("whoami || echo 'unknown'")
-                    os_info = airflow_container.exec_run("cat /etc/os-release || echo 'unknown'")
-                    ls_result = airflow_container.exec_run("ls -la / || echo 'unknown'")
-                    
-                    container_info = {
-                        "user": whoami_result.output.decode('utf-8').strip(),
-                        "os_info": os_info.output.decode('utf-8').strip()[:200],  # 첫 200자만
-                        "root_files": ls_result.output.decode('utf-8').strip()[:300]  # 첫 300자만
-                    }
-                    
-                    logger.info(f"[Airflow] 컨테이너 정보: {container_info}")
-                    
-                    # Mock 성공 응답 (실제 Airflow가 아니므로 시뮬레이션)
-                    success_result = {
-                        "status": "success", 
-                        "message": f"컨테이너 연결 성공 (Python 환경 없음 - 시뮬레이션 모드)",
-                        "output": f"Container info: {container_info['user']}, OS detected",
-                        "dag_id": dag_id,
-                        "simulation": True,
-                        "container": airflow_container.name
-                    }
-                    self.save_to_db(dag_id, success_result)
-                    return success_result
-                else:
-                    # Python이 있는 경우 실제 실행
-                    python_cmd = python_path.split('\n')[0]  # 첫 번째 경로 사용
-                    command = f"{python_cmd} {self.dag_file_path}"
-                    logger.info(f"[Airflow] 실행 명령: {command}")
-                    
-                    result = airflow_container.exec_run(command)
-                    output = result.output.decode('utf-8')
-                    
-                    logger.info(f"[Airflow] 실행 결과: {output}")
-                    
-                    if result.exit_code == 0:
-                        logger.info(f"[Airflow] Python 파일 '{self.dag_file_path}' 성공적으로 실행됨")
-                        success_result = {
-                            "status": "success", 
-                            "message": f"Python 파일 '{self.dag_file_path}' 실행 완료",
-                            "output": output.strip(),
-                            "dag_id": dag_id,
-                            "container": airflow_container.name
-                        }
-                        self.save_to_db(dag_id, success_result)
-                        return success_result
+                    # 첫 번째 사용 가능한 DAG 사용
+                    dag_lines = [line.strip() for line in available_dags.split('\n') if line.strip() and not line.startswith('DAGS')]
+                    if dag_lines:
+                        dag_id = dag_lines[0].split()[0]  # 첫 번째 컬럼이 DAG ID
+                        logger.info(f"[Airflow] 첫 번째 사용 가능한 DAG '{dag_id}'를 실행합니다.")
                     else:
-                        logger.error(f"[Airflow] Python 파일 실행 실패: {output}")
-                        error_result = {
-                            "status": "error", 
-                            "message": f"Python 파일 실행 실패",
-                            "output": output.strip(),
-                            "container": airflow_container.name
-                        }
-                        self.save_to_db(dag_id, error_result)
-                        return error_result
+                        error_msg = f"실행 가능한 DAG가 없습니다. DAG 파일을 /opt/airflow/dags/ 디렉토리에 배치하세요."
+                        logger.error(f"[Airflow] {error_msg}")
+                        result = {"status": "error", "message": error_msg}
+                        self.save_to_db(dag_id, result)
+                        return result
+            
+            # 3. DAG 트리거 실행
+            trigger_cmd = f"airflow dags trigger {dag_id}"
+            logger.info(f"[Airflow] CLI 실행 명령: {trigger_cmd}")
+            
+            trigger_result = airflow_container.exec_run(trigger_cmd, timeout=60)
+            output = trigger_result.output.decode('utf-8')
+            
+            logger.info(f"[Airflow] DAG 트리거 결과 (exit_code: {trigger_result.exit_code}): {output}")
+            
+            if trigger_result.exit_code == 0:
+                # 4. DAG 실행 상태 확인 (선택적)
+                status_cmd = f"airflow dags state {dag_id} $(date +%Y-%m-%d)"
+                status_result = airflow_container.exec_run(status_cmd, timeout=30)
+                status_output = status_result.output.decode('utf-8') if status_result.exit_code == 0 else "상태 확인 실패"
+                
+                success_result = {
+                    "status": "success", 
+                    "message": f"Airflow CLI DAG '{dag_id}' 트리거 성공",
+                    "trigger_output": output.strip(),
+                    "dag_status": status_output.strip(),
+                    "dag_id": dag_id,
+                    "container": airflow_container.name,
+                    "execution_mode": "airflow_cli"
+                }
+                self.save_to_db(dag_id, success_result)
+                return success_result
+            else:
+                error_result = {
+                    "status": "error", 
+                    "message": f"Airflow CLI DAG '{dag_id}' 트리거 실패",
+                    "output": output.strip(),
+                    "exit_code": trigger_result.exit_code,
+                    "container": airflow_container.name
+                }
+                self.save_to_db(dag_id, error_result)
+                return error_result
                 
         except Exception as e:
-            logger.error(f"[Airflow] 실행 중 오류 발생: {e}")
-            error_result = {"status": "error", "message": f"Airflow 실행 오류: {str(e)}"}
+            logger.error(f"[Airflow] CLI 실행 중 오류 발생: {e}")
+            error_result = {"status": "error", "message": f"Airflow CLI 실행 오류: {str(e)}"}
             self.save_to_db(dag_id, error_result)
             return error_result
     
@@ -473,46 +372,3 @@ class AirflowRunner:
     def run(self):
         """기존 호환성을 위한 run 메서드"""
         return self.run_bash_operator_dag()
-    
-    def check_docker_status(self):
-        """Docker 상태를 확인합니다"""
-        try:
-            if self.client is None:
-                return {
-                    "status": "error",
-                    "message": "Docker 클라이언트가 초기화되지 않았습니다. Docker Desktop이 실행 중인지 확인하세요.",
-                    "containers": []
-                }
-            
-            # Docker 연결 테스트
-            self.client.ping()
-            
-            # 실행 중인 컨테이너 목록
-            containers = self.client.containers.list()
-            container_info = []
-            
-            for container in containers:
-                container_info.append({
-                    "name": container.name,
-                    "image": container.image.tags[0] if container.image.tags else "unknown",
-                    "status": container.status
-                })
-            
-            return {
-                "status": "success",
-                "message": "Docker 연결 정상",
-                "containers": container_info
-            }
-            
-        except docker.errors.DockerException as e:
-            return {
-                "status": "error", 
-                "message": f"Docker 연결 오류: {str(e)}",
-                "containers": []
-            }
-        except Exception as e:
-            return {
-                "status": "error",
-                "message": f"Docker 상태 확인 오류: {str(e)}",
-                "containers": []
-            }
