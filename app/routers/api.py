@@ -236,26 +236,49 @@ def paging(
 ):
     return {"limit": limit, "offset": offset}
 
-
-# 201: Naver Finance Top 5 (dbms_naver_finance)
 @router.get("/stock/top5")
 def stock_top5(
-    date: str = Query(None, description="조회할 날짜 (YYYY-MM-DD 형식)"),
-    p: dict = Depends(paging), 
+    start_date: str = Query(None, description="조회 시작일 (YYYY-MM-DD)"),
+    end_date: str = Query(None, description="조회 종료일 (YYYY-MM-DD)"),
+    p: dict = Depends(paging),
     db: Session = Depends(get_db)
 ):
     q = db.query(NaverFinance).order_by(NaverFinance.ins_dt.desc(), NaverFinance.id.desc())
-    
-    # 날짜 필터링 추가
-    if date:
-        # YYYY-MM-DD 형식을 YYYYMMDD 형식으로 변환
+
+    # 날짜 between 필터링
+    if start_date and end_date:
         try:
-            formatted_date = date.replace('-', '')  # 2024-09-30 -> 20240930
-            q = q.filter(NaverFinance.strd_dt == formatted_date)
+            # DB는 strd_dt가 8자리(YYYYMMDD)임
+            start_dt = start_date.replace('-', '')[:8]
+            end_dt = end_date.replace('-', '')[:8]
+            if start_dt == end_dt:
+                q = q.filter(NaverFinance.strd_dt == start_dt)
+            else:
+                q = q.filter(NaverFinance.strd_dt >= start_dt, NaverFinance.strd_dt <= end_dt)
         except Exception as e:
-            # 날짜 형식이 잘못된 경우에도 처리
             pass
-    
+    elif start_date:
+        try:
+            start_dt = start_date.replace('-', '')[:8]
+            q = q.filter(NaverFinance.strd_dt == start_dt)
+        except Exception as e:
+            pass
+    total = q.count()
+    rows = q.limit(p["limit"]).offset(p["offset"]).all()
+    items = [
+        {
+            "strd_dt": r.strd_dt,
+            "stock_cd": r.stock_cd,
+            "stock_nm": r.stock_nm,
+            "pre_price": r.pre_price,
+            "today_price": r.today_price,
+            "trading_volume": r.trading_volume,
+            "ins_dt": r.ins_dt,
+        }
+        for r in rows
+    ]
+    return {"meta": {"total": total, "limit": p["limit"], "offset": p["offset"]}, "items": items}
+
     total = q.count()
     rows = q.limit(p["limit"]).offset(p["offset"]).all()
     items = [
