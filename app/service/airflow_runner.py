@@ -250,6 +250,7 @@ class AirflowRunner:
             result = airflow_container.exec_run(command)
             output = result.output.decode('utf-8')
             
+            # ...existing code...
             return {
                 "status": "success",
                 "dags": output.strip(),
@@ -285,7 +286,6 @@ class AirflowRunner:
                     "status": container.status
                 }
                 container_info.append(info)
-                
                 # Airflow 컨테이너 식별
                 if container.name in self.airflow_container_candidates or "airflow" in container.name.lower():
                     airflow_containers.append(info)
@@ -312,20 +312,16 @@ class AirflowRunner:
             }
     
     def save_to_db(self, dag_id, result):
-        """실행 결과를 데이터베이스에 저장합니다"""
         logger.info("[Airflow] 데이터베이스 저장 시작")
         session = SessionLocal()
-        
         try:
             strd_dt = time.strftime('%Y%m%d')
             ins_dt = time.strftime('%Y%m%d%H%M%S')
-            
             # 메시지를 500자로 제한 (데이터베이스 컬럼 크기 제한)
             message = result.get("message", "")
             if len(message) > 500:
                 message = message[:497] + "..."
                 logger.info(f"[Airflow] 메시지가 500자를 초과하여 자름: {len(result.get('message', ''))}")
-            
             # 기존 데이터 삭제 (중복 방지)
             logger.info(f"[Airflow] 기존 데이터 삭제 - strd_dt: {strd_dt}, api_nm: Airflow")
             session.query(ApiBatchStat).filter(
@@ -333,7 +329,6 @@ class AirflowRunner:
                 ApiBatchStat.api_nm == "Airflow"
             ).delete()
             session.commit()
-            
             # 새 데이터 저장
             obj = ApiBatchStat(
                 strd_dt=strd_dt,
@@ -345,9 +340,7 @@ class AirflowRunner:
             )
             session.add(obj)
             session.commit()
-            
             logger.info("[Airflow] 실행 결과 저장 완료")
-            
         except Exception as e:
             session.rollback()
             logger.error(f"[Airflow] 데이터베이스 저장 오류: {e}")
