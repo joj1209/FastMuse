@@ -5,478 +5,244 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" >
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=yes">
-        <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
         <script>
-            async function loadMainContent(menuNumber) {
-                const main = document.getElementById('main-content');
-                const today = new Date();
-                const todayStr = today.toISOString().split('T')[0];
-                main.innerHTML = '<div class="py-4">Loading...</div>';
-
-                const apiMap = {
-                    201: "/api/stock/top5",
-                    202: "/api/ev/top10",
-                    203: "/api/market/top10",
-                    204: "/api/blog/naver",
-                    205: "/api/youtube/comments",
-                    206: "/api/kakao/ai-image",
-                    207: "/api/kakao/talk",
-                    208: "/api/public/apt-trade",
-                    209: "/api/kma/forecast",
-                    210: "/api/jeju/flo-pop",
-                    211: "/api/seoul/for-pop",
-                    212: "/api/batch/stats"
-                };
-
-                if (!apiMap[menuNumber]) {
-                    main.innerHTML = "<h2>Select a menu</h2>";
-                    return;
-                }
-
-                // 날짜 검색 UI 적용 대상: 202~211
-                if (menuNumber >= 202 && menuNumber <= 211) {
-                    main.innerHTML = `
-                        <h2>${getApiTitle(menuNumber)}</h2>
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h6 class="card-title mb-0">검색 조건</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <label for="searchStartDate" class="form-label fs-6">시작일자</label>
-                                        <input type="date" class="form-control" id="searchStartDate" value="${todayStr}">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="searchEndDate" class="form-label fs-6">종료일자</label>
-                                        <input type="date" class="form-control" id="searchEndDate" value="${todayStr}">
-                                    </div>
-                                    <div class="col-md-4 d-flex align-items-end gap-2">
-                                        <button type="button" class="btn btn-primary" onclick="searchApiDataBetween(${menuNumber})">
-                                            <i class="fas fa-search"></i> 조회
-                                        </button>
-                                        <button type="button" class="btn btn-outline-secondary" onclick="setApiPeriod(7)">7일전</button>
-                                        <button type="button" class="btn btn-outline-secondary" onclick="setApiPeriod(30)">한달전</button>
-                                        <button type="button" class="btn btn-outline-secondary" onclick="setApiPeriod(180)">6개월전</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="searchResults">
-                            <div class="text-muted">조회 버튼을 눌러 데이터를 검색하세요.</div>
-                        </div>
-                    `;
-                    return;
-                }
-
-                // 기존: Naver Finance 등 날짜 검색 UI 없는 화면
-                try {
-                    const res = await fetch(apiMap[menuNumber]);
-                    const data = await res.json();  // {meta, items}
-                    const rows = data.items || [];
-                    let title = "";
-                    let thead = "";
-                    let tbody = "";
-                    switch(menuNumber) {
-                        // ...기존 switch문 그대로 유지...
-                        // ...existing code...
-                    }
-                    main.innerHTML = `
-                        <h2>${title}</h2>
-                        <div class="table-responsive small">
-                            <table class="table table-striped table-sm">
-                                <thead>${thead}</thead>
-                                <tbody>${tbody}</tbody>
-                            </table>
-                        </div>
-                    `;
-                } catch (e) {
-                    main.innerHTML = `<div class="text-danger">Loading failed: ${e}</div>`;
-                }
+        // DOM API 기반 공통 생성 함수
+        function el(tag, attrs = {}, children = []) {
+            const node = document.createElement(tag);
+            for (const [k, v] of Object.entries(attrs)) {
+                if (k === 'class') node.className = v;
+                else if (k === 'text') node.textContent = v;
+                else if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2), v);
+                else node.setAttribute(k, v);
             }
+            (Array.isArray(children) ? children : [children]).forEach(c => {
+                if (c == null) return;
+                node.append(c.nodeType ? c : document.createTextNode(c));
+            });
+            return node;
+        }
 
-            // API별 타이틀 반환 함수
-            function getApiTitle(menuNumber) {
+        // API별 타이틀
+        const titleMap = {
+            211: "Seoul API : 자치구단위 서울 생활인구(장기체류 외국인)",
+            210: "Jeju API : 지역별 시간단위 방문자수",
+            209: "기상청 : 동네별시간예보",
+            208: "Public Data : Apartment Trade",
+            207: "Kakao API Talk",
+            206: "Kakao AI Image",
+            205: "Youtube 키워드 검색 : UHD모니터",
+            204: "네이버 블로그 키워드 검색 : 시흥대야역 맛집",
+            203: "FinanceDataReader 글로벌마켓 Top 10",
+            202: "전기차 출고대수 Top 10",
+            201: "Stock Top 5",
+            212: "ApacheBatch Stats",
+        };
+
+        // API별 endpoint
+        const apiMap = {
+            201: "/api/stock/top5",
+            202: "/api/ev/top10",
+            203: "/api/market/top10",
+            204: "/api/blog/naver",
+            205: "/api/youtube/comments",
+            206: "/api/kakao/ai-image",
+            207: "/api/kakao/talk",
+            208: "/api/public/apt-trade",
+            209: "/api/kma/forecast",
+            210: "/api/jeju/flo-pop",
+            211: "/api/seoul/for-pop",
+            212: "/api/batch/stats"
+        };
+
+        // 날짜 검색 카드 생성
+        function createDateSearchCard(menuNumber) {
+            const todayStr = new Date().toISOString().split('T')[0];
+            return el('div', { class: 'card mb-4' }, [
+                el('div', { class: 'card-header' }, el('h6', { class: 'card-title mb-0' }, '검색 조건')),
+                el('div', { class: 'card-body' }, [
+                    el('div', { class: 'row g-3' }, [
+                        el('div', { class: 'col-md-4' }, [
+                            el('label', { for: 'searchStartDate', class: 'form-label fs-6' }, '시작일자'),
+                            el('input', { id: 'searchStartDate', type: 'date', class: 'form-control', value: todayStr })
+                        ]),
+                        el('div', { class: 'col-md-4' }, [
+                            el('label', { for: 'searchEndDate', class: 'form-label fs-6' }, '종료일자'),
+                            el('input', { id: 'searchEndDate', type: 'date', class: 'form-control', value: todayStr })
+                        ]),
+                        el('div', { class: 'col-md-4 d-flex align-items-end gap-2' }, [
+                            el('button', { class: 'btn btn-primary', onclick: () => searchApiDataBetween(menuNumber) }, '조회'),
+                            el('button', { class: 'btn btn-outline-secondary', onclick: () => setPeriod(7) }, '7일전'),
+                            el('button', { class: 'btn btn-outline-secondary', onclick: () => setPeriod(30) }, '한달전'),
+                            el('button', { class: 'btn btn-outline-secondary', onclick: () => setPeriod(180) }, '6개월전')
+                        ])
+                    ])
+                ])
+            ]);
+        }
+
+        // 기간 버튼 클릭 시 시작일자 변경
+        function setPeriod(daysAgo) {
+            const s = document.getElementById('searchStartDate');
+            const e = document.getElementById('searchEndDate');
+            const today = new Date();
+            const start = new Date(today.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+            if (s) s.value = start.toISOString().split('T')[0];
+            if (e) e.value = today.toISOString().split('T')[0];
+        }
+
+        // 메인 컨텐츠 렌더링
+        function renderMainContent(menuNumber) {
+            const main = document.getElementById('main-content');
+            main.innerHTML = '';
+            if (menuNumber >= 202 && menuNumber <= 211) {
+                main.append(el('h2', {}, titleMap[menuNumber]));
+                main.append(createDateSearchCard(menuNumber));
+                main.append(el('div', { id: 'searchResults' }, '조회 버튼을 눌러 데이터를 검색하세요.'));
+            } else if (menuNumber === 201) {
+                main.append(el('h2', {}, titleMap[menuNumber]));
+                main.append(createDateSearchCard(menuNumber));
+                main.append(el('div', { id: 'searchResults' }, '조회 버튼을 눌러 데이터를 검색하세요.'));
+            } else {
+                main.append(el('div', { class: 'py-4' }, '메뉴를 선택하세요.'));
+            }
+        }
+
+        // API 데이터 조회 및 테이블 렌더링
+        async function searchApiDataBetween(menuNumber) {
+            const s = document.getElementById('searchStartDate')?.value;
+            const e = document.getElementById('searchEndDate')?.value;
+            const resultsDiv = document.getElementById('searchResults');
+            if (!s || !e) {
+                alert('시작일자와 종료일자를 모두 선택해주세요.');
+                return;
+            }
+            if (s > e) {
+                alert('시작일자가 종료일자보다 클 수 없습니다.');
+                return;
+            }
+            resultsDiv.innerHTML = '';
+            resultsDiv.append(el('div', { class: 'py-4 d-flex align-items-center gap-2' }, [
+                el('div', { class: 'spinner-border', role: 'status', 'aria-hidden': 'true' }),
+                el('span', { class: 'text-muted' }, '데이터를 조회중입니다...')
+            ]));
+            try {
+                const url = `${apiMap[menuNumber]}?start_date=${s}&end_date=${e}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                const rows = data.items || [];
+                // 결과 테이블 컬럼/행 생성
+                let columns = [];
                 switch(menuNumber) {
-                    case 211: return "Seoul API : 자치구단위 서울 생활인구(장기체류 외국인)";
-                    case 210: return "Jeju API : 지역별 시간단위 방문자수";
-                    case 209: return "기상청 : 동네별시간예보";
-                    case 208: return "Public Data : Apartment Trade";
-                    case 207: return "Kakao API Talk";
-                    case 206: return "Kakao AI Image";
-                    case 205: return "Youtube 키워드 검색 : UHD모니터";
-                    case 204: return "네이버 블로그 키워드 검색 : 시흥대야역 맛집";
-                    case 203: return "FinanceDataReader 글로벌마켓 Top 10";
-                    case 202: return "전기차 출고대수 Top 10";
-                    case 201: return "Stock Top 5";
-                    default: return "조회";
+                    case 201:
+                        columns = [
+                            ["기준일자","strd_dt"],
+                            ["종목코드","stock_cd"],
+                            ["종목명","stock_nm"],
+                            ["전일가","pre_price"],
+                            ["현재가","today_price"],
+                            ["거래량","trading_volume"],
+                            ["입력일시","ins_dt"]
+                        ];
+                        break;
+                    case 202:
+                        columns = [
+                            ["기준일자","strd_dt"],
+                            ["시도명","sido_nm"],
+                            ["지역명","region"],
+                            ["접수방법","receipt_way"],
+                            ["접수순위","receipt_priority"],
+                            ["보급대수","value"],
+                            ["입력일시","ins_dt"]
+                        ];
+                        break;
+                    case 203:
+                        columns = [
+                            ["기준일자","strd_dt"],["마켓","market"],["주식일자","stock_day"],["시가","opening_price"],["고가","high_price"],["저가","low_price"],["종가","closing_price"],["거래량","volume"]
+                        ];
+                        break;
+                    case 204:
+                        columns = [
+                            ["기준일자","strd_dt"],["검색어","keword"],["제목","title"],["링크","link"],["입력일시","ins_dt"]
+                        ];
+                        break;
+                    case 205:
+                        columns = [
+                            ["기준일자","strd_dt"],["검색어","keword"],["링크","link"],["비디오ID","video_id"],["댓글게시자","comment_author"],["입력일시","ins_dt"]
+                        ];
+                        break;
+                    case 206:
+                        columns = [
+                            ["기준일자","strd_dt"],["제시어","suggest_word"]
+                        ];
+                        break;
+                    case 207:
+                        columns = [
+                            ["기준일자","strd_dt"],["접근토큰","access_token"],["토큰타입","token_type"],["갱신토큰","refresh_token"],["접근범위","scope"],["변경일시","upd_dt"],["입력일시","ins_dt"]
+                        ];
+                        break;
+                    case 208:
+                        columns = [
+                            ["기준일자","strd_dt"],["법정동","sgg_cd"],["도로명","road_nm"],["단지명","apt_nm"],["전용면적","excul_use_area"],["계약년도","deal_year"],["거래금액","deal_amount"],["층","floor"],["건축년도","build_year"],["입력일시","ins_dt"]
+                        ];
+                        break;
+                    case 209:
+                        columns = [
+                            ["기준일자","strd_dt"],["기준시간","strd_tm"],["카테고리","category"],["예보지점X좌표","nx"],["예보지점Y좌표","ny"],["강수량","obsr_value"],["입력일시","ins_dt"]
+                        ];
+                        break;
+                    case 210:
+                        columns = [
+                            ["기준일자","strd_dt"],["등록일자","regist_dt"],["시군구","city"],["읍면동","emd"],["성별","gender"],["연령대","age_group"],["거주인구","resd_pop"],["근무인구","work_pop"],["방문자수","visit_pop"],["입력일시","ins_dt"]
+                        ];
+                        break;
+                    case 211:
+                        columns = [
+                            ["기준일자","strd_dt"],["기준일ID","stdr_de_id"],["시간대구분","tmzon_pd_se"],["자치구코드","adstrd_code_se"],["총생활인구수","tot_lvpop_co"],["중국인체류인구수","china_staypop_co"],["중국인 외국인체류인구수","etc_staypop_co"],["입력일시","ins_dt"]
+                        ];
+                        break;
+                    case 212:
+                        columns = [
+                            ["통계일자","stat_date"],["배치명","batch_name"],["상태","status"],["시작시간","start_time"],["종료시간","end_time"],["소요시간","duration"]
+                        ];
+                        break;
                 }
+                const table = el('table', { class: 'table table-striped table-sm' });
+                const thead = el('thead');
+                const trh = el('tr');
+                columns.forEach(([text]) => trh.append(el('th', {}, text)));
+                thead.append(trh);
+                table.append(thead);
+                const tbody = el('tbody');
+                rows.forEach(row => {
+                    const tr = el('tr');
+                    columns.forEach(([_, key]) => tr.append(el('td', {}, row?.[key] ?? "")));
+                    tbody.append(tr);
+                });
+                table.append(tbody);
+                resultsDiv.innerHTML = '';
+                resultsDiv.append(
+                    el('div', { class: 'mb-2' },
+                        el('small', { class: 'text-muted' }, `총 ${rows.length}건의 데이터가 조회되었습니다.`)
+                    ),
+                    el('div', { class: 'table-responsive small' }, table)
+                );
+            } catch (e2) {
+                resultsDiv.innerHTML = '';
+                resultsDiv.append(el('div', { class: 'alert alert-danger' }, `데이터 조회 중 오류가 발생했습니다: ${e2.message}`));
             }
+        }
 
-            // 기간 버튼 클릭 시 시작일자 변경 함수 (공통)
-            function setApiPeriod(daysAgo) {
-                const today = new Date();
-                const startDateObj = new Date(today.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-                const startDate = startDateObj.toISOString().split('T')[0];
-                const todayStr = today.toISOString().split('T')[0];
-                document.getElementById('searchStartDate').value = startDate;
-                document.getElementById('searchEndDate').value = todayStr;
-            }
-
-            // API별 데이터 검색 실행 (날짜 between)
-            async function searchApiDataBetween(menuNumber) {
-                const startDate = document.getElementById('searchStartDate').value;
-                const endDate = document.getElementById('searchEndDate').value;
-                const resultsDiv = document.getElementById('searchResults');
-                const apiMap = {
-                    202: "/api/ev/top10",
-                    203: "/api/market/top10",
-                    204: "/api/blog/naver",
-                    205: "/api/youtube/comments",
-                    206: "/api/kakao/ai-image",
-                    207: "/api/kakao/talk",
-                    208: "/api/public/apt-trade",
-                    209: "/api/kma/forecast",
-                    210: "/api/jeju/flo-pop",
-                    211: "/api/seoul/for-pop"
-                };
-                if (!startDate || !endDate) {
-                    alert('시작일자와 종료일자를 모두 선택해주세요.');
-                    return;
+        // 사이드바 메뉴 클릭 이벤트 위임
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('sidebar').addEventListener('click', function(e) {
+                const a = e.target.closest('a[data-menu]');
+                if (a) {
+                    e.preventDefault();
+                    const menuNum = Number(a.dataset.menu);
+                    renderMainContent(menuNum);
                 }
-                if (startDate > endDate) {
-                    alert('시작일자가 종료일자보다 클 수 없습니다.');
-                    return;
-                }
-                resultsDiv.innerHTML = '<div class="py-4"><div class="spinner-border" role="status"></div> 데이터를 조회중입니다...</div>';
-                try {
-                    const res = await fetch(`${apiMap[menuNumber]}?start_date=${startDate}&end_date=${endDate}`);
-                    const data = await res.json();
-                    const rows = data.items || [];
-                    let title = getApiTitle(menuNumber);
-                    let thead = "";
-                    let tbody = "";
-                    switch(menuNumber) {
-                        case 211:
-                            thead = `<tr>
-                                <th>기준일자</th>
-                                <th>기준일ID</th>
-                                <th>시간대구분</th>
-                                <th>자치구코드</th>
-                                <th>총생활인구수</th>
-                                <th>중국인체류인구수</th>
-                                <th>중국인 외국인체류인구수</th>
-                                <th>입력일시</th>
-                            </tr>`;
-                            tbody = rows.map(b => `<tr>
-                                <td>${b.strd_dt ?? ""}</td>
-                                <td>${b.stdr_de_id ?? ""}</td>
-                                <td>${b.tmzon_pd_se ?? ""}</td>
-                                <td>${b.adstrd_code_se ?? ""}</td>
-                                <td>${b.tot_lvpop_co ?? ""}</td>
-                                <td>${b.china_staypop_co ?? ""}</td>
-                                <td>${b.etc_staypop_co ?? ""}</td>
-                                <td>${b.ins_dt ?? ""}</td>
-                            </tr>`).join("");
-                            break;
-                        case 210:
-                            thead = `<tr>
-                                <th>기준일자</th>
-                                <th>등록일자</th>
-                                <th>시군구</th>
-                                <th>읍면동</th>
-                                <th>성별</th>
-                                <th>연령대</th>
-                                <th>거주인구</th>
-                                <th>근무인구</th>
-                                <th>방문자수</th>
-                                <th>입력일시</th>
-                            </tr>`;
-                            tbody = rows.map(b => `<tr>
-                                <td>${b.strd_dt ?? ""}</td>
-                                <td>${b.regist_dt ?? ""}</td>
-                                <td>${b.city ?? ""}</td>
-                                <td>${b.emd ?? ""}</td>
-                                <td>${b.gender ?? ""}</td>
-                                <td>${b.age_group ?? ""}</td>
-                                <td>${b.resd_pop ?? ""}</td>
-                                <td>${b.work_pop ?? ""}</td>
-                                <td>${b.visit_pop ?? ""}</td>
-                                <td>${b.ins_dt ?? ""}</td>
-                            </tr>`).join("");
-                            break;
-                        case 209:
-                            thead = `<tr>
-                                <th>기준일자</th>
-                                <th>기준시간</th>
-                                <th>카테고리</th>
-                                <th>예보지점X좌표</th>
-                                <th>예보지점Y좌표</th>
-                                <th>강수량</th>
-                                <th>입력일시</th>
-                            </tr>`;
-                            tbody = rows.map(b => `<tr>
-                                <td>${b.strd_dt ?? ""}</td>
-                                <td>${b.strd_tm ?? ""}</td>
-                                <td>${b.category ?? ""}</td>
-                                <td>${b.nx ?? ""}</td>
-                                <td>${b.ny ?? ""}</td>
-                                <td>${b.obsr_value ?? ""}</td>
-                                <td>${b.ins_dt ?? ""}</td>
-                            </tr>`).join("");
-                            break;
-                        case 208:
-                            thead = `<tr>
-                                <th>기준일자</th>
-                                <th>법정동</th>
-                                <th>도로명</th>
-                                <th>단지명</th>
-                                <th>전용면적</th>
-                                <th>계약년도</th>
-                                <th>거래금액</th>
-                                <th>층</th>
-                                <th>건축년도</th>
-                                <th>입력일시</th>
-                            </tr>`;
-                            tbody = rows.map(b => `<tr>
-                                <td>${b.strd_dt ?? ""}</td>
-                                <td>${b.sgg_cd ?? ""}</td>
-                                <td>${b.road_nm ?? ""}</td>
-                                <td>${b.apt_nm ?? ""}</td>
-                                <td>${b.excul_use_area ?? ""}</td>
-                                <td>${b.deal_year ?? ""}</td>
-                                <td>${b.deal_amount ?? ""}</td>
-                                <td>${b.floor ?? ""}</td>
-                                <td>${b.build_year ?? ""}</td>
-                                <td>${b.ins_dt ?? ""}</td>
-                            </tr>`).join("");
-                            break;
-                        case 207:
-                            thead = `<tr>
-                                <th>기준일자</th>
-                                <th>접근토큰</th>
-                                <th>토큰타입</th>
-                                <th>갱신토큰</th>
-                                <th>접근범위</th>
-                                <th>변경일시</th>
-                                <th>입력일시</th>
-                            </tr>`;
-                            tbody = rows.map(b => `<tr>
-                                <td>${b.strd_dt ?? ""}</td>
-                                <td>${b.access_token ?? ""}</td>
-                                <td>${b.token_type ?? ""}</td>
-                                <td>${b.refresh_token ?? ""}</td>
-                                <td>${b.comment_author ?? ""}</td>
-                                <td>${b.scope ?? ""}</td>
-                                <td>${b.upd_dt ?? ""}</td>
-                                <td>${b.ins_dt ?? ""}</td>
-                            </tr>`).join("");
-                            break;
-                        case 206:
-                            thead = `<tr>
-                                <th>기준일자</th>
-                                <th>제시어</th>
-                            </tr>`;
-                            tbody = rows.map(b => `<tr>
-                                <td>${b.strd_dt ?? ""}</td>
-                                <td>${b.suggest_word ?? ""}</td>
-                            </tr>`).join("");
-                            break;
-                        case 205:
-                            thead = `<tr>
-                                <th>기준일자</th>
-                                <th>검색어</th>
-                                <th>링크</th>
-                                <th>비디오ID</th>
-                                <th>댓글게시자</th>
-                                <th>입력일시</th>
-                            </tr>`;
-                            tbody = rows.map(b => `<tr>
-                                <td>${b.strd_dt ?? ""}</td>
-                                <td>${b.keword ?? ""}</td>
-                                <td>${b.link ?? ""}</td>
-                                <td>${b.video_id ?? ""}</td>
-                                <td>${b.comment_author ?? ""}</td>
-                                <td>${b.ins_dt ?? ""}</td>
-                            </tr>`).join("");
-                            break;
-                        case 204:
-                            thead = `<tr>
-                                <th>기준일자</th>
-                                <th>검색어</th>
-                                <th>제목</th>
-                                <th>링크</th>
-                                <th>입력일시</th>
-                            </tr>`;
-                            tbody = rows.map(b => `<tr>
-                                <td>${b.strd_dt ?? ""}</td>
-                                <td>${b.keword ?? ""}</td>
-                                <td>${b.title ?? ""}</td>
-                                <td>${b.link ?? ""}</td>
-                                <td>${b.ins_dt ?? ""}</td>
-                            </tr>`).join("");
-                            break;
-                        case 203:
-                            thead = `<tr>
-                                <th>기준일자</th>
-                                <th>마켓</th>
-                                <th>주식일자</th>
-                                <th>시가</th>
-                                <th>고가</th>
-                                <th>저가</th>
-                                <th>종가</th>
-                                <th>거래량</th>
-                            </tr>`;
-                            tbody = rows.map(b => `<tr>
-                                <td>${b.strd_dt ?? ""}</td>
-                                <td>${b.market ?? ""}</td>
-                                <td>${b.stock_day ?? ""}</td>
-                                <td>${b.opening_price ?? ""}</td>
-                                <td>${b.high_price ?? ""}</td>
-                                <td>${b.low_price ?? ""}</td>
-                                <td>${b.closing_price ?? ""}</td>
-                                <td>${b.volume ?? ""}</td>
-                            </tr>`).join("");
-                            break;
-                        case 202:
-                            thead = `<tr>
-                                <th>기준일자</th>
-                                <th>시도명</th>
-                                <th>지역명</th>
-                                <th>접수방법</th>
-                                <th>접수순위</th>
-                                <th>보급대수</th>
-                                <th>입력일시</th>
-                            </tr>`;
-                            tbody = rows.map(b => `<tr>
-                                <td>${b.strd_dt ?? ""}</td>
-                                <td>${b.sido_nm ?? ""}</td>
-                                <td>${b.region ?? ""}</td>
-                                <td>${b.receipt_way ?? ""}</td>
-                                <td>${b.receipt_priority ?? ""}</td>
-                                <td>${b.value ?? ""}</td>
-                                <td>${b.ins_dt ?? ""}</td>
-                            </tr>`).join("");
-                            break;
-                    }
-                    resultsDiv.innerHTML = `
-                        <div class="mb-2">
-                            <small class="text-muted">총 ${rows.length}건의 데이터가 조회되었습니다.</small>
-                        </div>
-                        <div class="table-responsive small">
-                            <table class="table table-striped table-sm">
-                                <thead>${thead}</thead>
-                                <tbody>${tbody}</tbody>
-                            </table>
-                        </div>
-                    `;
-                } catch (e) {
-                    resultsDiv.innerHTML = `<div class="alert alert-danger">데이터 조회 중 오류가 발생했습니다: ${e.message}</div>`;
-                }
-            }
-            
-            // Naver Finance 검색 화면 로드 (시작/종료일자 현재일, 기간 버튼 추가)
-            function loadNaverFinanceSearch() {
-                const main = document.getElementById('main-content');
-                const today = new Date();
-                const todayStr = today.toISOString().split('T')[0];
-
-                main.innerHTML = `
-                    <h2>Naver Finance 조회</h2>
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h6 class="card-title mb-0">검색 조건</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <label for="searchStartDate" class="form-label fs-6">시작일자</label>
-                                    <input type="date" class="form-control" id="searchStartDate" value="${todayStr}">
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="searchEndDate" class="form-label fs-6">종료일자</label>
-                                    <input type="date" class="form-control" id="searchEndDate" value="${todayStr}">
-                                </div>
-                                <div class="col-md-4 d-flex align-items-end gap-2">
-                                    <button type="button" class="btn btn-primary" onclick="searchNaverFinanceDataBetween()">
-                                        <i class="fas fa-search"></i> 조회
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="setNaverFinancePeriod(7)">7일전</button>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="setNaverFinancePeriod(30)">한달전</button>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="setNaverFinancePeriod(180)">6개월전</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="searchResults">
-                        <div class="text-muted">조회 버튼을 눌러 데이터를 검색하세요.</div>
-                    </div>
-                `;
-            }
-
-            // 기간 버튼 클릭 시 시작일자 변경 함수
-            function setNaverFinancePeriod(daysAgo) {
-                const today = new Date();
-                const startDateObj = new Date(today.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-                const startDate = startDateObj.toISOString().split('T')[0];
-                const todayStr = today.toISOString().split('T')[0];
-                document.getElementById('searchStartDate').value = startDate;
-                document.getElementById('searchEndDate').value = todayStr;
-            }
-            
-            // Naver Finance 데이터 검색 실행 (날짜 between)
-            async function searchNaverFinanceDataBetween() {
-                const startDate = document.getElementById('searchStartDate').value;
-                const endDate = document.getElementById('searchEndDate').value;
-                const resultsDiv = document.getElementById('searchResults');
-
-                if (!startDate || !endDate) {
-                    alert('시작일자와 종료일자를 모두 선택해주세요.');
-                    return;
-                }
-                if (startDate > endDate) {
-                    alert('시작일자가 종료일자보다 클 수 없습니다.');
-                    return;
-                }
-
-                resultsDiv.innerHTML = '<div class="py-4"><div class="spinner-border" role="status"></div> 데이터를 조회중입니다...</div>';
-
-                try {
-                    // API 호출에 날짜 between 파라미터 추가
-                    const res = await fetch(`/api/stock/top5?start_date=${startDate}&end_date=${endDate}`);
-                    const data = await res.json();
-                    const rows = data.items || [];
-
-                    const thead = `<tr>
-                        <th>기준일자</th><th>종목코드</th><th>종목명</th>
-                        <th>전일가</th><th>현재가</th><th>거래량</th><th>입력일시</th>
-                    </tr>`;
-
-                    const tbody = rows.map(b => `<tr>
-                        <td>${b.strd_dt ?? ""}</td>
-                        <td>${b.stock_cd ?? ""}</td>
-                        <td>${b.stock_nm ?? ""}</td>
-                        <td>${b.pre_price ?? ""}</td>
-                        <td>${b.today_price ?? ""}</td>
-                        <td>${b.trading_volume ?? ""}</td>
-                        <td>${b.ins_dt ?? ""}</td>
-                    </tr>`).join("");
-
-                    resultsDiv.innerHTML = `
-                        <div class="mb-2">
-                            <small class="text-muted">총 ${rows.length}건의 데이터가 조회되었습니다.</small>
-                        </div>
-                        <div class="table-responsive small">
-                            <table class="table table-striped table-sm">
-                                <thead>${thead}</thead>
-                                <tbody>${tbody}</tbody>
-                            </table>
-                        </div>
-                    `;
-                } catch (e) {
-                    resultsDiv.innerHTML = `<div class="alert alert-danger">데이터 조회 중 오류가 발생했습니다: ${e.message}</div>`;
-                }
-            }
+            });
+        });
         </script>
 
         <meta charset="utf-8">
@@ -864,7 +630,7 @@
                             <div class="collapse" id="naverFinanceSubmenu">
                                 <ul class="nav nav-pills flex-column ms-3">
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadNaverFinanceSearch()">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="renderMainContent(201)">
                                             <svg class="bi"><use xlink:href="#table"/></svg>
                                             Naver Finance 조회
                                         </a>
@@ -887,7 +653,7 @@
                             <div class="collapse" id="evPortalSubmenu">
                                 <ul class="nav nav-pills flex-column ms-3">
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(202)">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="renderMainContent(202)">
                                             <svg class="bi"><use xlink:href="#table"/></svg>
                                             EV Portal 조회
                                         </a>
@@ -910,7 +676,7 @@
                             <div class="collapse" id="financeDataReaderSubmenu">
                                 <ul class="nav nav-pills flex-column ms-3">
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(203)">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="renderMainContent(203)">
                                             <svg class="bi"><use xlink:href="#table"/></svg>
                                             Finance Data Reader 조회
                                         </a>
@@ -933,7 +699,7 @@
                             <div class="collapse" id="naverApiSubmenu">
                                 <ul class="nav nav-pills flex-column ms-3">
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(204)">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="renderMainContent(204)">
                                             <svg class="bi"><use xlink:href="#table"/></svg>
                                             Naver API 조회
                                         </a>
@@ -956,7 +722,7 @@
                             <div class="collapse" id="googleApiSubmenu">
                                 <ul class="nav nav-pills flex-column ms-3">
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(205)">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="renderMainContent(205)">
                                             <svg class="bi"><use xlink:href="#table"/></svg>
                                             Google API 조회
                                         </a>
@@ -979,13 +745,13 @@
                             <div class="collapse" id="kakaoApiSubmenu">
                                 <ul class="nav nav-pills flex-column ms-3">
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(206)">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="renderMainContent(206)">
                                             <svg class="bi"><use xlink:href="#table"/></svg>
                                             Kakao AI Image 조회
                                         </a>
                                     </li>
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(207)">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="renderMainContent(207)">
                                             <svg class="bi"><use xlink:href="#table"/></svg>
                                             Kakao Talk 조회
                                         </a>
@@ -1008,7 +774,7 @@
                             <div class="collapse" id="publicApiSubmenu">
                                 <ul class="nav nav-pills flex-column ms-3">
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(208)">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="renderMainContent(208)">
                                             <svg class="bi"><use xlink:href="#table"/></svg>
                                             Public API 조회
                                         </a>
@@ -1025,7 +791,7 @@
                             <div class="collapse" id="kmaApiSubmenu">
                                 <ul class="nav nav-pills flex-column ms-3">
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(209)">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="renderMainContent(209)">
                                             <svg class="bi"><use xlink:href="#table"/></svg>
                                             KMA API 조회
                                         </a>
@@ -1048,7 +814,7 @@
                             <div class="collapse" id="jejuApiSubmenu">
                                 <ul class="nav nav-pills flex-column ms-3">
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(210)">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="renderMainContent(210)">
                                             <svg class="bi"><use xlink:href="#table"/></svg>
                                             Jeju API 조회
                                         </a>
@@ -1071,7 +837,7 @@
                             <div class="collapse" id="seoulApiSubmenu">
                                 <ul class="nav nav-pills flex-column ms-3">
                                     <li class="nav-item">
-                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="loadMainContent(211)">
+                                        <a class="nav-link d-flex align-items-center gap-2 w-100 text-start ps-3" href="#" onclick="renderMainContent(211)">
                                             <svg class="bi"><use xlink:href="#table"/></svg>
                                             Seoul API 조회
                                         </a>
@@ -1116,7 +882,7 @@
                         </li>
                         <li class="nav-item">
                             {# <a class="nav-link d-flex align-items-center gap-2" href="#"> #}
-                            <a class="nav-link d-flex align-items-center gap-2" href="#" onclick="loadMainContent(212)">    
+                            <a class="nav-link d-flex align-items-center gap-2" href="#" onclick="renderMainContent(212)">
                                 <svg class="bi"><use xlink:href="#door-closed"/></svg>
                                 ApachBatch
                             </a>
