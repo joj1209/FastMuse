@@ -629,16 +629,6 @@
             }
         }
         
-        async function runNaverBlogCrawler() {
-            try {
-                const res = await fetch('/api/run/naver-blog-crawler', {method: 'POST'});
-                const data = await res.json();
-                alert(`네이버 블로그 검색 완료!\n검색된 블로그 수: ${data.count || 0}\n키워드: 시흥대야역맛집`);
-            } catch (error) {
-                alert(`네이버 블로그 검색 오류: ${error.message}`);
-            }
-        }
-        
         async function runYoutubeCommentCrawler() {
             try {
                 const res = await fetch('/api/run/youtube-comment-crawler', {method: 'POST'});
