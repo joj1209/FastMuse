@@ -12,11 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 class NaverBlogCrawler:
-    def __init__(self):
+    def __init__(self, keyword=None):
         # 네이버 API 설정
         self.X_NAVER_CLIENT_ID = settings.X_NAVER_CLIENT_ID
         self.X_NAVER_CLIENT_SECRET = settings.X_NAVER_CLIENT_SECRET
-        self.keyword = "시흥대야역맛집"
+        print(f"[Crawler] 생성자 keyword 값: {keyword}")
+        self.keyword = keyword if keyword is not None else "시흥대야역맛집"
         self.api_url = "https://openapi.naver.com/v1/search/blog.json"
         
     def call_api(self, keyword, start=1, display=10):
@@ -103,12 +104,13 @@ class NaverBlogCrawler:
             
         return result
 
-    def blog_search(self, keyword, quantity=20):
+    def blog_search(self, keyword=None, quantity=20):
         """블로그 검색 실행"""
-        print(f"[네이버 블로그 검색] 키워드 '{keyword}' 검색 시작 (최대 {quantity}건)")
-        return self.get_paging_call(keyword, quantity)
+        search_keyword = keyword if keyword else self.keyword
+        print(f"[네이버 블로그 검색] 키워드 '{search_keyword}' 검색 시작 (최대 {quantity}건)")
+        return self.get_paging_call(search_keyword, quantity)
 
-    def parse_and_clean_data(self, raw_data):
+    def parse_and_clean_data(self, raw_data, keyword=None):
         """검색 결과 데이터 파싱 및 정리"""
         print(f"[네이버 블로그 검색] 데이터 파싱 시작: {len(raw_data)}개 아이템")
         
@@ -132,7 +134,7 @@ class NaverBlogCrawler:
                 
                 row = {
                     'strd_dt': strd_dt,
-                    'keword': self.keyword,  # 원문의 오타(keword) 유지
+                    'keword': keyword if keyword else self.keyword,  # 입력된 키워드 사용
                     'title': title.strip(),
                     'link': link,
                     'ins_dt': ins_dt
@@ -188,19 +190,19 @@ class NaverBlogCrawler:
         finally:
             session.close()
 
-    def run(self):
+    def run(self, keyword=None):
         """네이버 블로그 크롤링 실행"""
         try:
             print("[네이버 블로그 검색] 크롤링 시작")
             
             # 블로그 검색 실행
-            raw_data = self.blog_search(self.keyword, quantity=20)
+            raw_data = self.blog_search(keyword, quantity=20)
             if not raw_data:
                 print("[네이버 블로그 검색] 검색 결과가 없습니다")
                 return []
 
             # 데이터 파싱
-            parsed_data = self.parse_and_clean_data(raw_data)
+            parsed_data = self.parse_and_clean_data(raw_data, keyword)
             if not parsed_data:
                 print("[네이버 블로그 검색] 파싱된 데이터가 없습니다")
                 return []

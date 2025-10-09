@@ -72,9 +72,11 @@ async def run_finance_data_reader(request: Request):
 async def run_naver_blog_crawler(request: Request):
     """네이버 블로그 검색 크롤링 실행"""
     try:
-        crawler = NaverBlogCrawler()
-        data_list = crawler.run()
-        
+        body = await request.json()
+        keyword = body.get("keyword", None)
+        print(f"[API] 전달받은 키워드: {keyword}")
+        crawler = NaverBlogCrawler(keyword=keyword)
+        data_list = crawler.run(keyword=keyword)
         # ins_dt가 이제 문자열이므로 직렬화 처리 불필요
         return JSONResponse({
             "message": "네이버 블로그 검색 완료", 
