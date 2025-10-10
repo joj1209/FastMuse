@@ -12,7 +12,10 @@ logger = logging.getLogger(__name__)
 
 class YoutubeCommentCrawler:
     
-    def __init__(self, api_key=None):
+    def __init__(self, keyword=None, api_key=None):
+        # 키워드 설정
+        self.keyword = keyword if keyword is not None else "노트북"
+        
         # YouTube API 키 설정 - config에서 가져오기
         self.api_key = api_key or settings.DEVELOPER_KEY
         if self.api_key == "AIzaSyAH00WKaO2C6g7QSY8Chy4tYuU4SAswyc4":
@@ -150,9 +153,11 @@ class YoutubeCommentCrawler:
             logger.error(f"데이터베이스 저장 중 오류: {str(e)}")
             raise e
 
-    def run(self, search_keyword="노트북", video_count=10):
+    def run(self, keyword=None, video_count=10):
         """유튜브 댓글 크롤링 실행"""
         try:
+            # 키워드 우선순위: 파라미터 > 생성자에서 설정된 값 > 기본값
+            search_keyword = keyword if keyword is not None else self.keyword
             logger.info(f'유튜브 댓글 크롤링 시작 - 키워드: {search_keyword}')
             
             # 댓글 데이터 수집
