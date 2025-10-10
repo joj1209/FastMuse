@@ -211,6 +211,19 @@ async def run_airflow_bash_operator(request: Request):
             content={"error": "Airflow DAG 실행 중 오류 발생", "details": str(e)}
         )
 
+@router.get("/airflow/dags")
+def get_airflow_dags():
+    """Airflow DAG 목록을 조회합니다"""
+    try:
+        runner = AirflowRunner()
+        result = runner.list_dags()
+        return JSONResponse(result)
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "DAG 목록 조회 중 오류 발생", "details": str(e)}
+        )
+
 @router.get("/status/airflow")
 def check_airflow_status():
     """Airflow Docker 상태를 확인합니다"""
