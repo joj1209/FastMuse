@@ -75,7 +75,7 @@ class AirflowRunner:
                     if container.name == candidate:
                         try:
                             # Airflow CLI 사용 가능 여부 확인
-                            airflow_test = container.exec_run("airflow version", timeout=10)
+                            airflow_test = container.exec_run("airflow version")
                             if airflow_test.exit_code == 0:
                                 airflow_container = container
                                 logger.info(f"[Airflow] ✅ Airflow CLI 컨테이너 발견: '{container.name}'")
@@ -105,12 +105,12 @@ class AirflowRunner:
             
             # 1. DAG 목록 확인
             dag_list_cmd = "airflow dags list"
-            dag_list_result = airflow_container.exec_run(dag_list_cmd, timeout=30)
+            dag_list_result = airflow_container.exec_run(dag_list_cmd)
             logger.info(f"[Airflow] 사용 가능한 DAG 목록:\n{dag_list_result.output.decode('utf-8')}")
             
             # 2. DAG 존재 여부 확인
             dag_info_cmd = f"airflow dags show {dag_id}"
-            dag_info_result = airflow_container.exec_run(dag_info_cmd, timeout=15)
+            dag_info_result = airflow_container.exec_run(dag_info_cmd)
             dag_exists = dag_info_result.exit_code == 0
             
             if not dag_exists:
@@ -137,7 +137,7 @@ class AirflowRunner:
             trigger_cmd = f"airflow dags trigger {dag_id}"
             logger.info(f"[Airflow] CLI 실행 명령: {trigger_cmd}")
             
-            trigger_result = airflow_container.exec_run(trigger_cmd, timeout=60)
+            trigger_result = airflow_container.exec_run(trigger_cmd)
             output = trigger_result.output.decode('utf-8')
             
             logger.info(f"[Airflow] DAG 트리거 결과 (exit_code: {trigger_result.exit_code}): {output}")
@@ -145,7 +145,7 @@ class AirflowRunner:
             if trigger_result.exit_code == 0:
                 # 4. DAG 실행 상태 확인 (선택적)
                 status_cmd = f"airflow dags state {dag_id} $(date +%Y-%m-%d)"
-                status_result = airflow_container.exec_run(status_cmd, timeout=30)
+                status_result = airflow_container.exec_run(status_cmd)
                 status_output = status_result.output.decode('utf-8') if status_result.exit_code == 0 else "상태 확인 실패"
                 
                 success_result = {
