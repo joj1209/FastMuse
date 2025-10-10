@@ -245,20 +245,24 @@ class AirflowRunner:
             if not airflow_container:
                 return {"status": "error", "message": "Airflow 컨테이너를 찾을 수 없습니다"}
             
-            # DAG 목록 조회
-            command = "airflow dags list"
+            # DAG 목록 조회 (테이블 형식으로)
+            command = "airflow dags list --output table"
             result = airflow_container.exec_run(command)
             output = result.output.decode('utf-8')
+            
+            logger.info(f"[Airflow] 원본 DAG 목록 출력:\n{output}")
             
             # "dags_"로 시작하는 DAG만 필터링
             filtered_lines = []
             for line in output.split('\n'):
                 line = line.strip()
-                if line and not line.startswith('DAGS') and not line.startswith('---'):
-                    # 첫 번째 컬럼(DAG ID)이 "dags_"로 시작하는지 확인
-                    parts = line.split()
-                    if parts and parts[0].startswith('dags_'):
-                        filtered_lines.append(line)
+                if line and not line.startswith('dag_id') and not line.startswith('---') and '|' in line:
+                    # 파이프(|)로 구분된 컬럼 파싱
+                    parts = [part.strip() for part in line.split('|')]
+                    if len(parts) >= 3:  # dag_id, filepath, owner, paused 등
+                        dag_id = parts[0].strip()
+                        if dag_id.startswith('dags_'):
+                            filtered_lines.append(line)
             
             filtered_output = '\n'.join(filtered_lines)
             logger.info(f"[Airflow] 필터링된 DAG 목록 (dags_* only): {len(filtered_lines)}개")
@@ -268,7 +272,8 @@ class AirflowRunner:
                 "dags": filtered_output,
                 "container": airflow_container.name,
                 "total_filtered": len(filtered_lines),
-                "filter_criteria": "dags_*"
+                "filter_criteria": "dags_*",
+                "output_format": "table"
             }
             
         except Exception as e:

@@ -683,13 +683,13 @@
                         return;
                     }
 
-                    // DAG 목록 파싱
+                    // DAG 목록 파싱 (파이프로 구분된 테이블 형식)
                     const dagListText = data.dags || '';
                     const dagLines = dagListText.split('\n').filter(line => 
                         line.trim() && 
-                        !line.startsWith('DAGS') && 
-                        !line.startsWith('---') &&
-                        !line.includes('example') // 예시 DAG 제외 (선택적)
+                        line.includes('|') &&
+                        !line.includes('dag_id') && // 헤더 제외
+                        !line.includes('---') // 구분선 제외
                     );
 
                     if (dagLines.length === 0) {
@@ -706,20 +706,24 @@
                     const thead = `<tr>
                         <th>번호</th>
                         <th>DAG ID</th>
+                        <th>파일 경로</th>
                         <th>Owner</th>
                         <th>Paused</th>
                         <th>Actions</th>
                     </tr>`;
                     
                     const tbody = dagLines.map((line, index) => {
-                        const parts = line.trim().split(/\s+/);
+                        // 파이프(|)로 구분된 컬럼 파싱
+                        const parts = line.split('|').map(part => part.trim());
                         const dagId = parts[0] || '';
-                        const owner = parts[1] || 'Unknown';
-                        const paused = parts[2] || 'Unknown';
+                        const filepath = parts[1] || '';
+                        const owner = parts[2] || 'Unknown';
+                        const paused = parts[3] || 'Unknown';
                         
                         return `<tr>
                             <td>${index + 1}</td>
                             <td><code>${dagId}</code></td>
+                            <td><small class="text-muted">${filepath}</small></td>
                             <td>${owner}</td>
                             <td>
                                 <span class="badge ${paused === 'True' ? 'bg-warning' : 'bg-success'}">
