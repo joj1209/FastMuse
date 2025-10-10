@@ -221,7 +221,7 @@ class AirflowRunner:
             return {"status": "error", "message": f"상태 확인 오류: {str(e)}"}
     
     def list_dags(self):
-        """사용 가능한 DAG 목록을 가져옵니다"""
+        """사용 가능한 DAG 목록을 가져옵니다 (dags_로 시작하는 DAG만 필터링)"""
         try:
             containers = self.client.containers.list()
             airflow_container = None
@@ -250,11 +250,25 @@ class AirflowRunner:
             result = airflow_container.exec_run(command)
             output = result.output.decode('utf-8')
             
-            # ...existing code...
+            # "dags_"로 시작하는 DAG만 필터링
+            filtered_lines = []
+            for line in output.split('\n'):
+                line = line.strip()
+                if line and not line.startswith('DAGS') and not line.startswith('---'):
+                    # 첫 번째 컬럼(DAG ID)이 "dags_"로 시작하는지 확인
+                    parts = line.split()
+                    if parts and parts[0].startswith('dags_'):
+                        filtered_lines.append(line)
+            
+            filtered_output = '\n'.join(filtered_lines)
+            logger.info(f"[Airflow] 필터링된 DAG 목록 (dags_* only): {len(filtered_lines)}개")
+            
             return {
                 "status": "success",
-                "dags": output.strip(),
-                "container": airflow_container.name
+                "dags": filtered_output,
+                "container": airflow_container.name,
+                "total_filtered": len(filtered_lines),
+                "filter_criteria": "dags_*"
             }
             
         except Exception as e:
