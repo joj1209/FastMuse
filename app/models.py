@@ -136,7 +136,7 @@ class SeoulForPop(Base):
     etc_staypop_co = Column(Integer)
     ins_dt = Column(String(19))
 
-# 212: Batch stats
+# 212: Batch statistics
 class ApiBatchStat(Base):
     __tablename__ = "api_batch_stat"
     id = Column(Integer, primary_key=True)
